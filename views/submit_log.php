@@ -180,14 +180,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 $pdo->commit();
                 
-                // Send PIN only if it was newly generated or we just want to remind them
-                Mailer::sendPin($email, $callsign, $pin);
+                // Send PIN only if it was newly generated
+                if (!$participant) {
+                    Mailer::sendPin($email, $callsign, $pin);
+                }
                 
                 unset($_SESSION['temp_cabrillo']);
                 unlink($temp_file);
                 
                 $step = 3; // Success
-                $message = "Log successfully submitted! Your PIN has been emailed to $email.";
+                if ($participant) {
+                    $message = "Log successfully updated!";
+                } else {
+                    $message = "Log successfully submitted! Your PIN has been emailed to $email.";
+                }
                 $message_type = "success";
             }
             
