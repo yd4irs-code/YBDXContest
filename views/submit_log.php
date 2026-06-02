@@ -370,27 +370,46 @@ if ($step === 2 && !empty($temp_file)) {
                 }
             }
             
-            // Calculate DXCC and Continent counts
-            $score_data = calculateScore($parser->qsos, 'UNKNOWN', 'UNKNOWN');
+            // Calculate actual score with correct DXCC info
+            $callsign_for_calc = isset($parser->headers['CALLSIGN']) ? strtoupper($parser->headers['CALLSIGN']) : '';
+            require_once __DIR__ . '/../includes/ScoringHelper.php';
+            $dxcc_info_calc = getDxccFromCallsign($callsign_for_calc);
+            
+            $score_data = calculateScore($parser->qsos, $dxcc_info_calc['country'], $dxcc_info_calc['continent']);
             ksort($band_qsos); // Sort bands alphabetically/numerically
             ?>
             
             <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
-                <div style="background: rgba(16, 185, 129, 0.1); padding: 1rem; border-radius: 8px; flex: 1; min-width: 150px;">
+                <div style="background: rgba(16, 185, 129, 0.1); padding: 1rem; border-radius: 8px; flex: 1; min-width: 120px;">
                     <h4 style="color: var(--success); margin-bottom: 0.5rem; font-size: 0.9rem; text-transform: uppercase;">Valid QSOs</h4>
                     <span style="font-size: 2rem; font-weight: bold; color: var(--success);"><?php echo $valid_qso; ?></span>
                 </div>
-                <div style="background: rgba(59, 130, 246, 0.1); padding: 1rem; border-radius: 8px; flex: 1; min-width: 150px;">
-                    <h4 style="color: var(--accent-hover); margin-bottom: 0.5rem; font-size: 0.9rem; text-transform: uppercase;">Continents Worked</h4>
-                    <span style="font-size: 2rem; font-weight: bold; color: var(--accent-hover);"><?php echo $score_data['continent_count']; ?></span>
+                <div style="background: rgba(59, 130, 246, 0.1); padding: 1rem; border-radius: 8px; flex: 1; min-width: 120px;">
+                    <h4 style="color: var(--accent-hover); margin-bottom: 0.5rem; font-size: 0.9rem; text-transform: uppercase;">Points</h4>
+                    <span style="font-size: 2rem; font-weight: bold; color: var(--accent-hover);"><?php echo number_format($score_data['points']); ?></span>
                 </div>
-                <div style="background: rgba(59, 130, 246, 0.1); padding: 1rem; border-radius: 8px; flex: 1; min-width: 150px;">
-                    <h4 style="color: var(--accent-hover); margin-bottom: 0.5rem; font-size: 0.9rem; text-transform: uppercase;">Countries / DXCC</h4>
-                    <span style="font-size: 2rem; font-weight: bold; color: var(--accent-hover);"><?php echo $score_data['dxcc_count']; ?></span>
+                <div style="background: rgba(59, 130, 246, 0.1); padding: 1rem; border-radius: 8px; flex: 1; min-width: 120px;">
+                    <h4 style="color: var(--accent-hover); margin-bottom: 0.5rem; font-size: 0.9rem; text-transform: uppercase;">Multiplier</h4>
+                    <span style="font-size: 2rem; font-weight: bold; color: var(--accent-hover);"><?php echo number_format($score_data['multiplier']); ?></span>
                 </div>
-                <div style="background: rgba(239, 68, 68, 0.1); padding: 1rem; border-radius: 8px; flex: 1; min-width: 150px;">
-                    <h4 style="color: var(--danger); margin-bottom: 0.5rem; font-size: 0.9rem; text-transform: uppercase;">Error QSOs (X-QSO)</h4>
+                <div style="background: rgba(16, 185, 129, 0.1); padding: 1rem; border-radius: 8px; flex: 1; min-width: 150px; border: 1px solid rgba(16, 185, 129, 0.3);">
+                    <h4 style="color: var(--success); margin-bottom: 0.5rem; font-size: 0.9rem; text-transform: uppercase;">Total Score</h4>
+                    <span style="font-size: 2rem; font-weight: bold; color: var(--success);"><?php echo number_format($score_data['raw_score']); ?></span>
+                </div>
+                <div style="background: rgba(239, 68, 68, 0.1); padding: 1rem; border-radius: 8px; flex: 1; min-width: 120px;">
+                    <h4 style="color: var(--danger); margin-bottom: 0.5rem; font-size: 0.9rem; text-transform: uppercase;">X-QSO</h4>
                     <span style="font-size: 2rem; font-weight: bold; color: var(--danger);"><?php echo $xqso; ?></span>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+                <div style="background: rgba(255, 255, 255, 0.05); padding: 1rem; border-radius: 8px; flex: 1; min-width: 150px;">
+                    <h4 style="color: var(--text-secondary); margin-bottom: 0.5rem; font-size: 0.9rem; text-transform: uppercase;">Continents Worked</h4>
+                    <span style="font-size: 2rem; font-weight: bold; color: #fff;"><?php echo $score_data['continent_count']; ?></span>
+                </div>
+                <div style="background: rgba(255, 255, 255, 0.05); padding: 1rem; border-radius: 8px; flex: 1; min-width: 150px;">
+                    <h4 style="color: var(--text-secondary); margin-bottom: 0.5rem; font-size: 0.9rem; text-transform: uppercase;">Countries / DXCC</h4>
+                    <span style="font-size: 2rem; font-weight: bold; color: #fff;"><?php echo $score_data['dxcc_count']; ?></span>
                 </div>
             </div>
             
