@@ -18,13 +18,33 @@ if (isset($_GET['delete']) && isset($_GET['id'])) {
     exit;
 }
 
-$stmt = $pdo->query("SELECT * FROM participants ORDER BY year DESC, callsign ASC");
+$search = isset($_GET['search']) ? trim($_GET['search']) : '';
+$sql = "SELECT * FROM participants ";
+$params = [];
+if ($search !== '') {
+    $sql .= "WHERE callsign LIKE ? ";
+    $params[] = '%' . $search . '%';
+}
+$sql .= "ORDER BY year DESC, callsign ASC";
+
+$stmt = $pdo->prepare($sql);
+$stmt->execute($params);
 $participants = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <div class="glass-container animate-fade-in">
     <h2>Manage Participants</h2>
     <p style="color: var(--text-secondary); margin-bottom: 2rem;">Disqualify or remove participants from the contest.</p>
+    
+    <div style="margin-bottom: 1.5rem;">
+        <form method="get" action="participants.php" style="display: flex; gap: 0.5rem; max-width: 400px;">
+            <input type="text" name="search" value="<?php echo htmlspecialchars($search); ?>" placeholder="Search callsign..." style="flex: 1; background: rgba(0,0,0,0.2); color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; padding: 0.5rem 1rem;">
+            <button type="submit" class="btn" style="padding: 0.5rem 1rem;">Search</button>
+            <?php if ($search !== ''): ?>
+                <a href="participants.php" class="btn btn-danger" style="padding: 0.5rem 1rem;">Clear</a>
+            <?php endif; ?>
+        </form>
+    </div>
     
     <div class="table-responsive">
         <table>
