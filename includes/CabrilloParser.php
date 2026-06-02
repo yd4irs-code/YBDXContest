@@ -18,8 +18,11 @@ class CabrilloParser {
         $this->file_lines = file($file_path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
         
         $schedule = getContestDate($contest_year);
-        $this->contest_start_ts = strtotime($schedule['start']);
-        $this->contest_end_ts = strtotime($schedule['end']);
+        // Explicitly parse contest schedule boundaries as UTC
+        $start_dt = new DateTime($schedule['start'], new DateTimeZone('UTC'));
+        $end_dt = new DateTime($schedule['end'], new DateTimeZone('UTC'));
+        $this->contest_start_ts = $start_dt->getTimestamp();
+        $this->contest_end_ts = $end_dt->getTimestamp();
     }
 
     public function parse() {
