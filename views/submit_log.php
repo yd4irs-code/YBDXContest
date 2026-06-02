@@ -168,8 +168,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt = $pdo->prepare("INSERT INTO qsos (participant_id, freq, mode, qso_date, qso_time, sent_call, sent_rst, sent_exch, rcvd_call, rcvd_rst, rcvd_exch, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                 foreach ($parser->qsos as $qso) {
                     $status = $qso['is_xqso'] ? 'xqso' : 'valid';
+                    $formatted_time = (strlen($qso['time']) === 4) ? substr($qso['time'], 0, 2) . ':' . substr($qso['time'], 2, 2) . ':00' : $qso['time'];
                     $stmt->execute([
-                        $p_id, $qso['freq'], $qso['mode'], $qso['date'], $qso['time'],
+                        $p_id, $qso['freq'], $qso['mode'], $qso['date'], $formatted_time,
                         $qso['sent_call'], $qso['sent_rst'], $qso['sent_exch'],
                         $qso['rcvd_call'], $qso['rcvd_rst'], $qso['rcvd_exch'], $status
                     ]);
