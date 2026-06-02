@@ -31,6 +31,7 @@ $participants = $stmt->fetchAll(PDO::FETCH_ASSOC);
             <thead>
                 <tr>
                     <th>Callsign</th>
+                    <th>PIN</th>
                     <th>Category</th>
                     <th>Email</th>
                     <th>Year</th>
@@ -42,6 +43,7 @@ $participants = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 <?php foreach ($participants as $p): ?>
                 <tr style="<?php echo $p['disqualified'] ? 'background: rgba(239, 68, 68, 0.1);' : ''; ?>">
                     <td style="font-weight: bold; color: var(--accent-hover);"><?php echo htmlspecialchars($p['callsign']); ?></td>
+                    <td style="font-family: monospace; letter-spacing: 2px; color: #fbbf24; font-weight: bold;"><?php echo htmlspecialchars($p['access_code']); ?></td>
                     <td><?php echo htmlspecialchars($p['category_op']); ?> / <?php echo htmlspecialchars($p['category_band']); ?></td>
                     <td><?php echo htmlspecialchars($p['email']); ?></td>
                     <td><?php echo $p['year']; ?></td>
