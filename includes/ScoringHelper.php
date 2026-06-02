@@ -29,6 +29,73 @@ function getDxccFromCallsign($callsign) {
     return ['country' => 'UNKNOWN', 'continent' => 'UNKNOWN'];
 }
 
+function parsePortableCallsign($callsign) {
+    $callsign = strtoupper(trim($callsign));
+    
+    if (strpos($callsign, '/') === false) {
+        return ['base' => $callsign, 'effective_modifier' => null];
+    }
+    
+    $parts = explode('/', $callsign);
+    $base = '';
+    $modifier = '';
+    
+    $op_modifiers = ['P', 'M', 'MM', 'AM', 'QRP'];
+    
+    $filtered_parts = [];
+    foreach ($parts as $p) {
+        if (!in_array($p, $op_modifiers)) {
+            $filtered_parts[] = $p;
+        }
+    }
+    
+    if (count($filtered_parts) == 1) {
+        return ['base' => $filtered_parts[0], 'effective_modifier' => null];
+    }
+    
+    $part1 = $filtered_parts[0];
+    $part2 = $filtered_parts[1];
+    
+    if (strlen($part1) < strlen($part2)) {
+        $modifier = $part1;
+        $base = $part2;
+    } elseif (strlen($part2) < strlen($part1)) {
+        $modifier = $part2;
+        $base = $part1;
+    } else {
+        $modifier = $part1;
+        $base = $part2;
+    }
+    
+    return ['base' => $base, 'effective_modifier' => $modifier];
+}
+
+function getPrefixAndDxccLookup($callsign) {
+    $parsed = parsePortableCallsign($callsign);
+    $base = $parsed['base'];
+    $mod = $parsed['effective_modifier'];
+    
+    if (!$mod) {
+        preg_match('/^([A-Z0-9]+[0-9])/', $base, $matches);
+        $prefix = isset($matches[1]) ? $matches[1] : substr($base, 0, 3);
+        return ['prefix' => $prefix, 'dxcc_lookup' => $base];
+    }
+    
+    if (is_numeric($mod)) {
+        preg_match('/^([A-Z0-9]+)[0-9]/', $base, $matches);
+        $base_letters = isset($matches[1]) ? $matches[1] : substr($base, 0, 2);
+        $prefix = $base_letters . $mod;
+        return ['prefix' => $prefix, 'dxcc_lookup' => $base];
+    }
+    
+    if (preg_match('/[0-9]/', $mod)) {
+        $prefix = $mod;
+    } else {
+        $prefix = $mod . '1';
+    }
+    return ['prefix' => $prefix, 'dxcc_lookup' => $mod];
+}
+
 function getBandFromFreq($freq) {
     if (!is_numeric($freq)) {
         $f = strtoupper(trim($freq));
@@ -69,16 +136,17 @@ function calculateScore(&$qsos, $my_country, $my_continent) {
         if (isset($q['is_xqso']) && $q['is_xqso']) continue;
         
         $rcvd = isset($q['rcvd_call']) ? $q['rcvd_call'] : '';
-        $dxcc = getDxccFromCallsign($rcvd);
+        
+        // Handle portable callsigns for prefix and DXCC lookup
+        $parsed_call = getPrefixAndDxccLookup($rcvd);
+        $prefix = $parsed_call['prefix'];
+        $dxcc = getDxccFromCallsign($parsed_call['dxcc_lookup']);
+        
         $band = getBandFromFreq(isset($q['freq']) ? $q['freq'] : '0');
         
         $is_mult = false;
         $mult_count = 0;
         $pts = 0;
-        
-        // Extract WPX prefix
-        preg_match('/^([A-Z0-9]+[0-9])/', $rcvd, $matches);
-        $prefix = isset($matches[1]) ? $matches[1] : substr($rcvd, 0, 3);
         
         if ($is_indonesian) {
             // Points for Indonesian stations
