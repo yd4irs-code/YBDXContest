@@ -28,8 +28,8 @@ class CrossChecker {
             $ubn_reports[$callsign] = "UBN Report for $callsign - YB DX Contest {$this->year}\n";
             $ubn_reports[$callsign] .= "=================================================\n\n";
 
-            // Fetch QSOs
-            $qso_stmt = $this->pdo->prepare("SELECT * FROM qsos WHERE participant_id = ? AND status != 'xqso' ORDER BY qso_date, qso_time");
+            // Fetch QSOs (including xqso so we can report them)
+            $qso_stmt = $this->pdo->prepare("SELECT * FROM qsos WHERE participant_id = ? ORDER BY qso_date, qso_time");
             $qso_stmt->execute([$p_id]);
             $qsos = $qso_stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -41,51 +41,64 @@ class CrossChecker {
             $busted_count = 0;
             $nil_count = 0;
             $unique_count = 0;
+            $xqso_count = 0;
             $total_points = 0;
 
+            require_once __DIR__ . '/ScoringHelper.php';
+
             foreach ($qsos as $q) {
+                if ($q['status'] === 'xqso') {
+                    $ubn_reports[$callsign] .= $this->formatQsoLine($q) . " - QSO Error\n";
+                    $xqso_count++;
+                    continue;
+                }
+                
                 $rcvd_call = strtoupper($q['rcvd_call']);
                 $band_mode = $q['freq'] . '_' . $q['mode'];
                 
                 // 1. Dupe Check
                 if (isset($worked_calls[$rcvd_call][$band_mode])) {
                     $this->updateQsoStatus($q['id'], 'dupe', 0, 0);
-                    $ubn_reports[$callsign] .= "[DUPE] " . $this->formatQsoLine($q) . "\n";
+                    $ubn_reports[$callsign] .= $this->formatQsoLine($q) . " - duplicate QSO\n";
                     $dupe_count++;
                     continue;
                 }
                 $worked_calls[$rcvd_call][$band_mode] = true;
 
                 // 2. Cross Check
-                $cross = $this->findMatchingQso($rcvd_call, $callsign, $q);
-                
-                if ($cross['status'] === 'NIL') {
-                    // Check if rcvd_call even submitted a log
-                    if ($this->hasSubmittedLog($rcvd_call)) {
+                if ($this->hasSubmittedLog($rcvd_call)) {
+                    $cross = $this->findMatchingQso($rcvd_call, $callsign, $q);
+                    if ($cross['status'] === 'NIL') {
                         $this->updateQsoStatus($q['id'], 'nil', 0, 0);
-                        $ubn_reports[$callsign] .= "[NIL]  " . $this->formatQsoLine($q) . " (Not in $rcvd_call's log)\n";
+                        $ubn_reports[$callsign] .= $this->formatQsoLine($q) . " - NIL\n";
                         $nil_count++;
+                    } elseif ($cross['status'] === 'BUSTED') {
+                        $this->updateQsoStatus($q['id'], 'busted', 0, 0);
+                        $ubn_reports[$callsign] .= $this->formatQsoLine($q) . " - Busted (" . $cross['reason'] . ")\n";
+                        $busted_count++;
                     } else {
-                        // Unique
-                        $this->updateQsoStatus($q['id'], 'unique', 0, 0);
-                        $ubn_reports[$callsign] .= "[UNIQ] " . $this->formatQsoLine($q) . "\n";
-                        $unique_count++;
+                        // Valid
+                        $this->updateQsoStatus($q['id'], 'valid', 0, 0);
+                        $ubn_reports[$callsign] .= $this->formatQsoLine($q) . " - valid QSO\n";
+                        $valid_count++;
                     }
-                } elseif ($cross['status'] === 'BUSTED') {
-                    $this->updateQsoStatus($q['id'], 'busted', 0, 0);
-                    $ubn_reports[$callsign] .= "[BUST] " . $this->formatQsoLine($q) . " (" . $cross['reason'] . ")\n";
-                    $busted_count++;
                 } else {
-                    // Valid
-                    $this->updateQsoStatus($q['id'], 'valid', 0, 0);
-                    $ubn_reports[$callsign] .= "[VALD] " . $this->formatQsoLine($q) . "\n";
-                    $valid_count++;
+                    // Did NOT submit a log. Check if Unique.
+                    if ($this->isUniqueQso($rcvd_call)) {
+                        $this->updateQsoStatus($q['id'], 'unique', 0, 0);
+                        $ubn_reports[$callsign] .= $this->formatQsoLine($q) . " - Unique\n";
+                        $unique_count++;
+                    } else {
+                        // Valid because it is recorded by >= 3 participants
+                        $this->updateQsoStatus($q['id'], 'valid', 0, 0);
+                        $ubn_reports[$callsign] .= $this->formatQsoLine($q) . " - valid QSO\n";
+                        $valid_count++;
+                    }
                 }
             }
             
-            // Now that all statuses are marked, fetch valid and unique QSOs
-            require_once __DIR__ . '/ScoringHelper.php';
-            $valid_stmt = $this->pdo->prepare("SELECT * FROM qsos WHERE participant_id = ? AND status IN ('valid', 'unique') ORDER BY qso_date, qso_time");
+            // Now that all statuses are marked, fetch ONLY VALID QSOs
+            $valid_stmt = $this->pdo->prepare("SELECT * FROM qsos WHERE participant_id = ? AND status = 'valid' ORDER BY qso_date, qso_time");
             $valid_stmt->execute([$p_id]);
             $valid_qsos = $valid_stmt->fetchAll(PDO::FETCH_ASSOC);
             
@@ -102,11 +115,6 @@ class CrossChecker {
             $total_mults = $score_data['multiplier'];
             $final_score = $score_data['raw_score'];
             
-            // Count xqsos
-            $xqso_count = 0;
-            foreach ($qsos as $q_orig) {
-                if (isset($q_orig['status']) && $q_orig['status'] === 'xqso') $xqso_count++;
-            }
             $raw_qso = $valid_count + $unique_count + $dupe_count + $busted_count + $nil_count + $xqso_count;
 
             // Update cabrillo_logs
@@ -140,23 +148,43 @@ class CrossChecker {
             return ['status' => 'NIL'];
         }
         
+        require_once __DIR__ . '/ScoringHelper.php';
         $my_time = strtotime($my_qso['qso_date'] . ' ' . $my_qso['qso_time']);
+        $my_band = getBandFromFreq($my_qso['freq']);
+        
+        $best_match = null;
+        $closest_diff = PHP_INT_MAX;
         
         foreach ($matches as $m) {
             $their_time = strtotime($m['qso_date'] . ' ' . $m['qso_time']);
             $diff = abs($my_time - $their_time);
+            $their_band = getBandFromFreq($m['freq']);
             
-            if ($diff <= 300) { // Within 5 minutes
-                // Check exchange
-                if ($my_qso['rcvd_exch'] == $m['sent_exch']) {
-                    return ['status' => 'VALID'];
-                } else {
-                    return ['status' => 'BUSTED', 'reason' => "Exchange mismatch. Rcvd: {$my_qso['rcvd_exch']} vs Their Sent: {$m['sent_exch']}"];
+            // 30 minutes = 1800 seconds tolerance
+            if ($my_band === $their_band && $my_qso['mode'] === $m['mode'] && $diff <= 1800) {
+                if ($diff < $closest_diff) {
+                    $closest_diff = $diff;
+                    $best_match = $m;
                 }
             }
         }
         
-        return ['status' => 'BUSTED', 'reason' => 'Time difference > 5 mins'];
+        if (!$best_match) {
+            return ['status' => 'NIL']; // Band, Mode, or Time mismatch > 30 mins
+        }
+        
+        if ($my_qso['rcvd_exch'] == $best_match['sent_exch']) {
+            return ['status' => 'VALID'];
+        } else {
+            return ['status' => 'BUSTED', 'reason' => "Exchange mismatch. Rcvd: {$my_qso['rcvd_exch']} vs Their Sent: {$best_match['sent_exch']}"];
+        }
+    }
+
+    private function isUniqueQso($target_call) {
+        $stmt = $this->pdo->prepare("SELECT COUNT(DISTINCT participant_id) FROM qsos WHERE rcvd_call = ? AND status != 'xqso'");
+        $stmt->execute([$target_call]);
+        $count = $stmt->fetchColumn();
+        return $count < 3;
     }
 
     private function hasSubmittedLog($callsign) {
