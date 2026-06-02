@@ -18,9 +18,9 @@ Aplikasi ini dibangun murni menggunakan **Vanilla PHP (PDO)**, **Vanilla CSS (Gl
    - Penolakan baris QSO yang waktu kejadiannya meleset dari jadwal kontes (Setiap Sabtu Minggu Ke-2 Bulan Januari selama 24 jam penuh UTC).
    - Penandaan otomatis sebagai `X-QSO` bagi baris data yang melanggar aturan, tanpa merusak keseluruhan fail log peserta.
 3. **The Cross-Checker Engine (Mesin Ajudikasi Silang)**
-   - Secara masif membaca ratusan ribu baris `QSO:` dari seluruh kontestan yang berpartisipasi dan menyilangkannya dengan batas deviasi waktu *5 menit*.
-   - Mengelompokkan status silang (*cross-reference*) menjadi: `VALID` (Cocok), `BUSTED` (Data penukaran salah/sandi keliru), `NIL` (Lawan komunikasi tidak mencatatkan QSO), `DUPE` (Log ganda pada pita frekuensi yang sama), dan `UNIQUE`.
-   - Mengeluarkan dokumen teks murni berupa Laporan **UBN (Unique, Busted, NIL)** yang dapat dipelajari kembali oleh masing-masing peserta.
+   - Secara masif membaca ratusan ribu baris `QSO:` dari seluruh kontestan yang berpartisipasi dan menyilangkannya dengan batas deviasi waktu **30 menit**.
+   - Mengelompokkan status silang (*cross-reference*) menjadi: `VALID` (Cocok), `BUSTED` (Data *exchange* keliru), `NIL` (Lawan tidak mencatat, atau beda *band/mode*, atau beda waktu > 30 menit), `DUPE` (Log ganda), dan `UNIQUE` (Stasiun lawan dicatat oleh kurang dari 3 partisipan). Hanya QSO **VALID** yang akan dihitung Poin dan Multiplier-nya.
+   - Mengeluarkan dokumen teks murni berupa Laporan **UBN (Unique, Busted, NIL)** yang memuat status setiap baris QSO secara detail.
 4. **Papan Peringkat Berlapis Ketat (*Leaderboard*)**
    - Klasemen hasil murni maupun hasil ajudikasi (*Final Score*) disajikan secara ketat dan berjenjang dari `Kategori Operator -> Band -> Power -> Benua -> Negara`.
    - Papan rekor sepanjang masa (All-Time High / ATH) merekam para jawara tak tertandingi di setiap kategori selama sejarah kontes.

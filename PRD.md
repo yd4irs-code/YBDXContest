@@ -42,6 +42,20 @@ Aplikasi menyediakan formulir (*submission form*) interaktif pada *website* publ
 ### 2.3 Perhitungan Awal, Konfirmasi, & Keamanan (RAW Score)
 Apabila file Cabrillo yang dikirim peserta dinyatakan **valid secara teknis**, maka aplikasi akan menjalankan alur berikut:
 1. **Perhitungan Sementara:** Aplikasi menghitung data QSO dan langsung menampilkannya kepada peserta, meliputi: Total QSO (tidak termasuk duplikat), Total QSO per *band*, Total QSO duplikat, Total negara/DXCC, Total poin, Total multiplier, dan Total skor sementara (*RAW Score*).
+   
+   **Metode Perhitungan Poin:**
+   - **Peserta Indonesia:** QSO dengan stasiun Indonesia mendapat **0 poin**. QSO dengan stasiun di benua yang sama (OC) mendapat **5 poin**. QSO dengan stasiun di benua berbeda mendapat **10 poin**.
+   - **Peserta Internasional (DX):** QSO dengan stasiun di negara yang sama mendapat **1 poin**. QSO dengan stasiun di benua yang sama mendapat **2 poin**. QSO dengan stasiun di benua berbeda mendapat **3 poin**. Khusus QSO dengan stasiun Indonesia mendapat **10 poin**.
+   
+   **Metode Perhitungan Multiplier:**
+   - Setiap QSO yang memecahkan rekor pertama kali berkomunikasi dengan **Prefix** baru di suatu *band* akan mendapatkan **1 multiplier**.
+   - Setiap QSO yang memecahkan rekor pertama kali berkomunikasi dengan **Negara (DXCC)** baru di suatu *band* akan mendapatkan **1 multiplier**.
+   - Apabila sebuah QSO memecahkan rekor Prefix dan DXCC sekaligus pada *band* tersebut, maka QSO itu berhak mendapatkan **2 multiplier**.
+   - (Peserta DX hanya mendapatkan multiplier dari Prefix dan DXCC khusus milik stasiun Indonesia).
+   - **Stasiun Portable:** *Callsign* dengan *modifier* seperti `YB/JH1HUT` atau `JH1HUT/YB` akan dibaca sebagai Prefix `YB1` dan DXCC `INDONESIA`. `YB1AR/5` akan dibaca sebagai Prefix `YB5`. *Modifier* operasional seperti `/P`, `/M`, `/QRP` diabaikan dalam penentuan *prefix*.
+
+   **Total Skor Sementara = Total Poin × Total Multiplier**.
+
 2. **Konfirmasi Persetujuan:** Aplikasi akan meminta konfirmasi kepada peserta apakah setuju dengan hasil perhitungan sementara tersebut.
 3. **Penyimpanan File:** Jika peserta menyatakan **setuju**, aplikasi akan menyimpan file Cabrillo tersebut secara fisik ke dalam folder server dengan struktur `ValidQSO/$(tahun_kontes_berjalan)` untuk nantinya diproses pada tahap pemeriksaan silang (Ajudikasi).
 4. **Kode Akses Keamanan:** Setelah file tersimpan, aplikasi akan diatur untuk memberikan informasi berupa **Kode Akses (6 digit angka)** di layar. Kode akses ini beserta laporan penerimaan file Cabrillo juga akan **dikirim otomatis melalui email** yang didaftarkan peserta.
@@ -53,15 +67,17 @@ Apabila file Cabrillo yang dikirim peserta dinyatakan **valid secara teknis**, m
 ### 2.4 Sistem Cross-Check & Ajudikasi (Skor Akhir)
 Setelah batas waktu pengumpulan log ditutup, robot akan menjalankan proses *cross-checking* (pemeriksaan silang) antar log semua peserta untuk mendapatkan **Skor Akhir**. Aturan *cross-checking* adalah sebagai berikut:
 
-- **Valid QSO:** Jika YB0HHH mencatat QSO dengan JA1UUU, robot akan mencari log milik JA1UUU. Jika pada log JA1UUU data QSO tersebut benar-benar ada dan cocok, maka QSO dianggap valid dan poin diberikan sesuai aturan kontes.
-- **Busted QSO:** Jika data QSO ditemukan namun terdapat perbedaan catatan data (meliputi: Band, Waktu/Time, Mode, RST, Callsign, atau Nomor Urut/NR), atau sama sekali tidak ada di log JA1UUU (karena salah ketik callsign, dsb), maka QSO tersebut dianggap *Busted*. **QSO ini tidak mendapatkan poin.**
-- **Duplicate QSO:** Jika seorang peserta secara tidak sengaja mencatat data QSO yang sama sebanyak 2 kali atau lebih dalam file Cabrillo-nya, maka robot hanya menghitung data tersebut sebagai 1 QSO. Catatan yang berlebih tidak mendapat poin.
-- **Unique QSO:** Jika seorang peserta mencatat QSO dengan stasiun yang *tidak mengirimkan file log Cabrillo*. 
-  - **Syarat Peserta Aktif:** Sebuah callsign stasiun yang tidak mengirim log *hanya* dapat diakui keberadaannya sebagai peserta kontes jika callsign tersebut tercatat pada setidaknya **3 (tiga) file Cabrillo peserta yang berbeda**.
-  - Jika stasiun tersebut tercatat kurang dari 3 kali (stasiun tersebut dianggap bukan peserta kontes sesungguhnya), maka QSO tersebut dinamakan *Unique* dan **tidak mendapatkan poin**.
-- **Not In Log (NIL):** Jika seorang peserta mencatat QSO dengan peserta lain (yang mengirim log), namun di dalam log milik peserta lain tersebut TIDAK ADA data QSO yang dimaksud. QSO ini dianggap *Not In Log* dan **tidak mendapatkan poin**.
+- **Valid QSO:** Jika YB0HHH mencatat QSO dengan JA1UUU, dan log milik JA1UUU mencatat hal yang persis sama, maka QSO dianggap valid dan poin beserta multiplier diberikan secara normal.
+- **Busted QSO:** Jika data QSO ditemukan secara waktu, band, dan mode, namun terdapat kesalahan pencatatan data/kode pertukaran (*exchange* / NR), maka QSO tersebut dianggap *Busted*. **QSO ini tidak mendapatkan poin dan tidak mendapat multiplier**.
+- **Duplicate QSO:** Jika seorang peserta mencatat data QSO yang sama sebanyak 2 kali atau lebih dalam *band* yang sama, maka aplikasi hanya menghitung data pertama. Catatan yang berlebih ditandai duplikat dan tidak mendapat poin.
+- **Unique QSO:** Peserta/callsign *Unique* adalah *callsign* yang tercatat di dalam basis data (seluruh log masuk) pada **kurang dari 3 peserta yang berbeda**. Jika sebuah QSO berstatus *Unique*, QSO tersebut **tidak mendapatkan poin dan tidak mendapat multiplier**.
+- **Not In Log (NIL):** Sebuah QSO dianggap *NIL* (dan **tidak mendapatkan poin serta tidak mendapat multiplier**) apabila memenuhi salah satu kondisi berikut:
+  - QSO yang dicatat tidak ditemukan di dalam log lawan komunikasi.
+  - Terdapat perbedaan catatan waktu lebih dari **30 menit** antar kedua log.
+  - Terdapat ketidakcocokan *Band* atau *Mode* antar kedua log.
+  - *Callsign* tercatat dengan salah (contoh YB1UUU tercatat sebagai YB2UUU).
 
-*Penghitungan Skor Akhir:* Robot menghitung ulang Poin dan Multiplier dari sisa QSO yang Valid. Total poin dikalikan multiplier menghasilkan Skor Akhir.
+*Penghitungan Skor Akhir:* Setelah proses penyaringan di atas selesai, robot hanya mengumpulkan sisa baris QSO yang berstatus **Valid**. Robot menghitung ulang Total Poin dan Multiplier berdasarkan sisa QSO tersebut secara dinamis per *band*. **Total Skor Akhir = Total Poin Valid × Total Multiplier Valid**.
 
 ### 2.5 Laporan Hasil Ajudikasi (File UBN)
 Bersamaan dengan pengumuman Skor Akhir, robot akan membuatkan sebuah file laporan dengan istilah **UBN (Unverified, Busted, Not In Log)** untuk setiap peserta.
