@@ -41,73 +41,89 @@ foreach ($logs as $log) {
         <?php else: ?>
         
             <?php foreach($grouped as $op => $bands): ?>
-                <h3 style="background: rgba(59, 130, 246, 0.3); padding: 0.5rem 1rem; border-radius: 8px; margin-top: 2rem; border-left: 5px solid var(--accent-color);">
-                    Operator: <?php echo htmlspecialchars($op); ?>
-                </h3>
-                
-                <?php foreach($bands as $band => $powers): ?>
-                    <h4 style="color: var(--accent-hover); margin-left: 1rem; margin-top: 1.5rem; border-bottom: 1px solid var(--glass-border);">
-                        Band: <?php echo htmlspecialchars($band); ?>
-                    </h4>
-                    
-                    <?php foreach($powers as $power => $conts): ?>
-                        <div style="margin-left: 2rem; margin-top: 1rem;">
-                            <span class="badge badge-warning" style="margin-bottom: 1rem; display: inline-block;">
-                                Power: <?php echo htmlspecialchars($power); ?>
-                            </span>
-                            
-                            <?php foreach($conts as $cont => $countries): ?>
-                                <h5 style="margin-top: 1rem; color: #fff;">Continent: <?php echo htmlspecialchars($cont); ?></h5>
-                                
-                                <?php foreach($countries as $country => $participants): ?>
-                                    <h6 style="color: var(--text-secondary); margin-top: 0.5rem;"><?php echo htmlspecialchars($country); ?></h6>
-                                    
-                                    <div class="table-responsive">
-                                        <table>
-                                            <thead>
-                                                <tr>
-                                                    <th style="width: 50px;">Rank</th>
-                                                    <th>Callsign</th>
-                                                    <th style="text-align: right;">Valid QSO</th>
-                                                    <th style="text-align: right;">Points</th>
-                                                    <th style="text-align: right;">Mult</th>
-                                                    <th style="text-align: right;">Final Score</th>
-                                                    <th style="text-align: center;">UBN Report</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <?php 
-                                                $rank = 1;
-                                                foreach($participants as $p): ?>
-                                                <tr>
-                                                    <td>
-                                                        <?php if($rank == 1) echo '<span style="color: gold;"><i class="fas fa-trophy"></i> 1</span>';
-                                                              elseif($rank == 2) echo '<span style="color: silver;">2</span>';
-                                                              elseif($rank == 3) echo '<span style="color: #cd7f32;">3</span>';
-                                                              else echo $rank; 
-                                                        ?>
-                                                    </td>
-                                                    <td style="font-weight: 600; color: var(--accent-hover);"><?php echo htmlspecialchars($p['callsign']); ?></td>
-                                                    <td style="text-align: right;"><?php echo $p['total_qso']; ?></td>
-                                                    <td style="text-align: right;"><?php echo $p['total_points']; ?></td>
-                                                    <td style="text-align: right;"><?php echo $p['total_multiplier']; ?></td>
-                                                    <td style="text-align: right; font-weight: bold;"><?php echo number_format($p['raw_score']); ?></td>
-                                                    <td style="text-align: center;">
-                                                        <a href="ValidQSO/<?php echo $current_contest_year; ?>/UBN/<?php echo urlencode($p['callsign']); ?>.txt" target="_blank" class="btn" style="padding: 0.3rem 0.8rem; font-size: 0.8rem;">View UBN</a>
-                                                    </td>
-                                                </tr>
-                                                <?php 
-                                                $rank++;
-                                                endforeach; 
-                                                ?>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                <?php endforeach; ?>
-                            <?php endforeach; ?>
-                        </div>
-                    <?php endforeach; ?>
-                <?php endforeach; ?>
+                <details class="score-details level-1" open>
+                    <summary>
+                        <span class="summary-title">Operator: <?php echo htmlspecialchars($op); ?></span>
+                        <i class="fas fa-chevron-down summary-icon"></i>
+                    </summary>
+                    <div class="details-content">
+                        <?php foreach($bands as $band => $powers): ?>
+                            <details class="score-details level-2">
+                                <summary>
+                                    <span class="summary-title">Band: <?php echo htmlspecialchars($band); ?></span>
+                                    <i class="fas fa-chevron-down summary-icon"></i>
+                                </summary>
+                                <div class="details-content">
+                                    <?php foreach($powers as $power => $conts): ?>
+                                        <details class="score-details level-3">
+                                            <summary>
+                                                <span class="summary-title">Power: <span class="badge badge-warning" style="margin-left:0.5rem; margin-bottom:0; font-size:0.8rem;"><?php echo htmlspecialchars($power); ?></span></span>
+                                                <i class="fas fa-chevron-down summary-icon"></i>
+                                            </summary>
+                                            <div class="details-content">
+                                                <?php foreach($conts as $cont => $countries): ?>
+                                                    <details class="score-details level-4">
+                                                        <summary>
+                                                            <span class="summary-title">Continent: <?php echo htmlspecialchars($cont); ?></span>
+                                                            <i class="fas fa-chevron-down summary-icon"></i>
+                                                        </summary>
+                                                        <div class="details-content">
+                                                            <?php foreach($countries as $country => $participants): ?>
+                                                                <h6 style="color: var(--text-secondary); margin-top: 1rem; margin-bottom: 0.5rem; font-size: 1.1rem; border-bottom: 1px dashed var(--glass-border); padding-bottom: 0.3rem;"><i class="fas fa-flag" style="margin-right: 0.5rem;"></i> <?php echo htmlspecialchars($country); ?></h6>
+                                                                
+                                                                <div class="table-responsive">
+                                                                    <table>
+                                                                        <thead>
+                                                                            <tr>
+                                                                                <th style="width: 50px;">Rank</th>
+                                                                                <th>Callsign</th>
+                                                                                <th style="text-align: right;">Valid QSO</th>
+                                                                                <th style="text-align: right;">Points</th>
+                                                                                <th style="text-align: right;">Mult</th>
+                                                                                <th style="text-align: right;">Final Score</th>
+                                                                                <th style="text-align: center;">UBN Report</th>
+                                                                            </tr>
+                                                                        </thead>
+                                                                        <tbody>
+                                                                            <?php 
+                                                                            $rank = 1;
+                                                                            foreach($participants as $p): ?>
+                                                                            <tr>
+                                                                                <td>
+                                                                                    <?php if($rank == 1) echo '<span style="color: gold;"><i class="fas fa-trophy"></i> 1</span>';
+                                                                                          elseif($rank == 2) echo '<span style="color: silver;">2</span>';
+                                                                                          elseif($rank == 3) echo '<span style="color: #cd7f32;">3</span>';
+                                                                                          else echo $rank; 
+                                                                                    ?>
+                                                                                </td>
+                                                                                <td style="font-weight: 600; color: var(--accent-hover);"><?php echo htmlspecialchars($p['callsign']); ?></td>
+                                                                                <td style="text-align: right;"><?php echo $p['total_qso']; ?></td>
+                                                                                <td style="text-align: right;"><?php echo $p['total_points']; ?></td>
+                                                                                <td style="text-align: right;"><?php echo $p['total_multiplier']; ?></td>
+                                                                                <td style="text-align: right; font-weight: bold;"><?php echo number_format($p['raw_score']); ?></td>
+                                                                                <td style="text-align: center;">
+                                                                                    <a href="ValidQSO/<?php echo $current_contest_year; ?>/UBN/<?php echo urlencode($p['callsign']); ?>.txt" target="_blank" class="btn" style="padding: 0.3rem 0.8rem; font-size: 0.8rem;">View UBN</a>
+                                                                                </td>
+                                                                            </tr>
+                                                                            <?php 
+                                                                            $rank++;
+                                                                            endforeach; 
+                                                                            ?>
+                                                                        </tbody>
+                                                                    </table>
+                                                                </div>
+                                                            <?php endforeach; ?>
+                                                        </div>
+                                                    </details>
+                                                <?php endforeach; ?>
+                                            </div>
+                                        </details>
+                                    <?php endforeach; ?>
+                                </div>
+                            </details>
+                        <?php endforeach; ?>
+                    </div>
+                </details>
             <?php endforeach; ?>
             
             <?php if(count($dq_logs) > 0): ?>
