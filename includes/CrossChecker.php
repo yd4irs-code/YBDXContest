@@ -67,12 +67,9 @@ class CrossChecker {
                         $nil_count++;
                     } else {
                         // Unique
-                        $pts = 1; // Default 1 point
-                        $mult = $this->checkMultiplier($rcvd_call, $worked_multipliers);
-                        $this->updateQsoStatus($q['id'], 'unique', $pts, $mult);
+                        $this->updateQsoStatus($q['id'], 'unique', 0, 0);
                         $ubn_reports[$callsign] .= "[UNIQ] " . $this->formatQsoLine($q) . "\n";
                         $unique_count++;
-                        $total_points += $pts;
                     }
                 } elseif ($cross['status'] === 'BUSTED') {
                     $this->updateQsoStatus($q['id'], 'busted', 0, 0);
@@ -80,17 +77,37 @@ class CrossChecker {
                     $busted_count++;
                 } else {
                     // Valid
-                    $pts = 1; // Default 1 point
-                    $mult = $this->checkMultiplier($rcvd_call, $worked_multipliers);
-                    $this->updateQsoStatus($q['id'], 'valid', $pts, $mult);
+                    $this->updateQsoStatus($q['id'], 'valid', 0, 0);
+                    $ubn_reports[$callsign] .= "[VALD] " . $this->formatQsoLine($q) . "\n";
                     $valid_count++;
-                    $total_points += $pts;
                 }
             }
             
-            $total_mults = count($worked_multipliers);
-            $final_score = $total_points * $total_mults;
-            $raw_qso = $valid_count + $unique_count + $dupe_count + $busted_count + $nil_count;
+            // Now that all statuses are marked, fetch valid and unique QSOs
+            require_once __DIR__ . '/ScoringHelper.php';
+            $valid_stmt = $this->pdo->prepare("SELECT * FROM qsos WHERE participant_id = ? AND status IN ('valid', 'unique') ORDER BY qso_date, qso_time");
+            $valid_stmt->execute([$p_id]);
+            $valid_qsos = $valid_stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Re-calculate points and multipliers using ScoringHelper
+            $score_data = calculateScore($valid_qsos, $p['country'], $p['continent']);
+            
+            // Update individual QSOs in DB with their calculated points and multipliers
+            $upd_qso = $this->pdo->prepare("UPDATE qsos SET points = ?, is_multiplier = ? WHERE id = ?");
+            foreach ($valid_qsos as $vq) {
+                $upd_qso->execute([$vq['qso_points'], $vq['mult_count'], $vq['id']]);
+            }
+            
+            $total_points = $score_data['points'];
+            $total_mults = $score_data['multiplier'];
+            $final_score = $score_data['raw_score'];
+            
+            // Count xqsos
+            $xqso_count = 0;
+            foreach ($qsos as $q_orig) {
+                if (isset($q_orig['status']) && $q_orig['status'] === 'xqso') $xqso_count++;
+            }
+            $raw_qso = $valid_count + $unique_count + $dupe_count + $busted_count + $nil_count + $xqso_count;
 
             // Update cabrillo_logs
             $upd = $this->pdo->prepare("UPDATE cabrillo_logs SET raw_score=?, total_qso=?, total_dupes=?, total_points=?, total_multiplier=?, status='adjudicated' WHERE participant_id=?");
@@ -148,15 +165,6 @@ class CrossChecker {
         return $stmt->rowCount() > 0;
     }
 
-    private function checkMultiplier($rcvd_call, &$worked_multipliers) {
-        // Simplified multiplier: prefix/country (just using first 1-2 chars for simulation)
-        $prefix = preg_replace('/[0-9].*$/', '', $rcvd_call); 
-        if (!isset($worked_multipliers[$prefix])) {
-            $worked_multipliers[$prefix] = true;
-            return 1;
-        }
-        return 0;
-    }
 
     private function updateQsoStatus($id, $status, $pts, $mult) {
         $stmt = $this->pdo->prepare("UPDATE qsos SET status = ?, points = ?, is_multiplier = ? WHERE id = ?");
