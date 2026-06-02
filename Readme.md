@@ -99,4 +99,4 @@ Ubah *variabel*: `$host`, `$dbname`, `$user`, dan `$pass`.
 ---
 
 ### *Developer Notes*
-Dirancang dan dibangun secara otonom oleh **Antigravity (Google DeepMind)** dengan panduan mahakarya UI/UX spesifik dari Anda. *73 and Good DX!*
+Dirancang dan dibangun oleh **Robby Sandes - YB4HQ**. *73 and Good DX!*
