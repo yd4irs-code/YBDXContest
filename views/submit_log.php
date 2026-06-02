@@ -276,33 +276,86 @@ if ($step === 2 && !empty($temp_file)) {
             </form>
 
         <?php elseif ($step === 2): ?>
-            <h3 style="color: var(--success);">Validation Results</h3>
-            <p>Version: <?php echo htmlspecialchars($parser->version); ?></p>
-            <p>Callsign: <?php echo htmlspecialchars($parser->headers['CALLSIGN'] ?? '-'); ?></p>
+            <h3 style="color: var(--success); margin-bottom: 1.5rem;">Validation Results</h3>
+            
+            <div style="background: rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                <h4 style="margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem; color: var(--accent-hover);">Header Details (v<?php echo htmlspecialchars($parser->version); ?>)</h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                    <div><strong style="color: var(--text-secondary);">Callsign:</strong> <?php echo htmlspecialchars($parser->headers['CALLSIGN'] ?? '-'); ?></div>
+                    <div><strong style="color: var(--text-secondary);">Operator:</strong> <?php echo htmlspecialchars($parser->headers['CATEGORY-OPERATOR'] ?? '-'); ?></div>
+                    <div><strong style="color: var(--text-secondary);">Band:</strong> <?php echo htmlspecialchars($parser->headers['CATEGORY-BAND'] ?? '-'); ?></div>
+                    <div><strong style="color: var(--text-secondary);">Power:</strong> <?php echo htmlspecialchars($parser->headers['CATEGORY-POWER'] ?? '-'); ?></div>
+                    <div><strong style="color: var(--text-secondary);">Mode:</strong> <?php echo htmlspecialchars($parser->headers['CATEGORY-MODE'] ?? '-'); ?></div>
+                    <div><strong style="color: var(--text-secondary);">Club:</strong> <?php echo htmlspecialchars($parser->headers['CLUB'] ?? '-'); ?></div>
+                    <div><strong style="color: var(--text-secondary);">Email:</strong> <?php echo htmlspecialchars($parser->headers['EMAIL'] ?? '-'); ?></div>
+                </div>
+            </div>
             
             <?php
+            require_once __DIR__ . '/../includes/ScoringHelper.php';
+            
             $valid_qso = 0;
             $xqso = 0;
             $xqso_details = [];
+            $band_qsos = [];
+            
             foreach ($parser->qsos as $i => $qso) {
                 if ($qso['is_xqso']) {
                     $xqso++;
                     $xqso_details[] = "Line " . ($i + 1) . ": " . implode(", ", $qso['error_reasons']);
                 } else {
                     $valid_qso++;
+                    
+                    // Determine Band from Frequency
+                    $freq = (int)$qso['freq'];
+                    $band = 'UNKNOWN';
+                    if ($freq >= 3500 && $freq <= 4000) $band = '80M';
+                    elseif ($freq >= 7000 && $freq <= 7300) $band = '40M';
+                    elseif ($freq >= 14000 && $freq <= 14350) $band = '20M';
+                    elseif ($freq >= 21000 && $freq <= 21450) $band = '15M';
+                    elseif ($freq >= 28000 && $freq <= 29700) $band = '10M';
+                    else $band = 'OTHER';
+                    
+                    if (!isset($band_qsos[$band])) $band_qsos[$band] = 0;
+                    $band_qsos[$band]++;
                 }
             }
+            
+            // Calculate DXCC and Continent counts
+            $score_data = calculateScore($parser->qsos, 'UNKNOWN', 'UNKNOWN');
+            ksort($band_qsos); // Sort bands alphabetically/numerically
             ?>
             
-            <div style="display: flex; gap: 2rem; margin: 1.5rem 0;">
-                <div style="background: rgba(16, 185, 129, 0.1); padding: 1rem; border-radius: 8px; flex: 1;">
-                    <h4 style="color: var(--success); margin-bottom: 0.5rem;">Valid QSOs</h4>
-                    <span style="font-size: 2rem; font-weight: bold;"><?php echo $valid_qso; ?></span>
+            <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+                <div style="background: rgba(16, 185, 129, 0.1); padding: 1rem; border-radius: 8px; flex: 1; min-width: 150px;">
+                    <h4 style="color: var(--success); margin-bottom: 0.5rem; font-size: 0.9rem; text-transform: uppercase;">Valid QSOs</h4>
+                    <span style="font-size: 2rem; font-weight: bold; color: var(--success);"><?php echo $valid_qso; ?></span>
                 </div>
-                <div style="background: rgba(239, 68, 68, 0.1); padding: 1rem; border-radius: 8px; flex: 1;">
-                    <h4 style="color: var(--danger); margin-bottom: 0.5rem;">Error QSOs (X-QSO)</h4>
-                    <span style="font-size: 2rem; font-weight: bold;"><?php echo $xqso; ?></span>
+                <div style="background: rgba(59, 130, 246, 0.1); padding: 1rem; border-radius: 8px; flex: 1; min-width: 150px;">
+                    <h4 style="color: var(--accent-hover); margin-bottom: 0.5rem; font-size: 0.9rem; text-transform: uppercase;">Continents Worked</h4>
+                    <span style="font-size: 2rem; font-weight: bold; color: var(--accent-hover);"><?php echo $score_data['continent_count']; ?></span>
                 </div>
+                <div style="background: rgba(59, 130, 246, 0.1); padding: 1rem; border-radius: 8px; flex: 1; min-width: 150px;">
+                    <h4 style="color: var(--accent-hover); margin-bottom: 0.5rem; font-size: 0.9rem; text-transform: uppercase;">Countries / DXCC</h4>
+                    <span style="font-size: 2rem; font-weight: bold; color: var(--accent-hover);"><?php echo $score_data['dxcc_count']; ?></span>
+                </div>
+                <div style="background: rgba(239, 68, 68, 0.1); padding: 1rem; border-radius: 8px; flex: 1; min-width: 150px;">
+                    <h4 style="color: var(--danger); margin-bottom: 0.5rem; font-size: 0.9rem; text-transform: uppercase;">Error QSOs (X-QSO)</h4>
+                    <span style="font-size: 2rem; font-weight: bold; color: var(--danger);"><?php echo $xqso; ?></span>
+                </div>
+            </div>
+            
+            <h4 style="margin-bottom: 1rem; color: var(--text-secondary);">Valid QSOs Breakdown per Band</h4>
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 2.5rem;">
+                <?php foreach ($band_qsos as $b => $c): ?>
+                    <div style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); padding: 0.8rem 1.5rem; border-radius: 8px; text-align: center; min-width: 80px;">
+                        <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.2rem;"><?php echo $b; ?></div>
+                        <div style="font-size: 1.5rem; font-weight: bold; color: #fff;"><?php echo $c; ?></div>
+                    </div>
+                <?php endforeach; ?>
+                <?php if(empty($band_qsos)): ?>
+                    <div style="color: var(--text-secondary); font-style: italic;">No valid QSOs found to categorize.</div>
+                <?php endif; ?>
             </div>
             
             <?php if (count($parser->errors) > 0): ?>
