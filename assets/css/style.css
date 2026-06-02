@@ -275,6 +275,10 @@ input:focus, select:focus, textarea:focus {
     align-items: flex-start;
 }
 
+.chat-msg:nth-child(even) {
+    flex-direction: row-reverse;
+}
+
 .chat-avatar {
     width: 50px;
     height: 50px;
@@ -287,6 +291,10 @@ input:focus, select:focus, textarea:focus {
     border: 2px solid var(--accent-color);
 }
 
+.chat-msg:nth-child(even) .chat-avatar {
+    border: 2px solid var(--success);
+}
+
 .chat-bubble {
     background: rgba(59, 130, 246, 0.1);
     border: 1px solid rgba(59, 130, 246, 0.3);
@@ -295,11 +303,22 @@ input:focus, select:focus, textarea:focus {
     max-width: 80%;
 }
 
+.chat-msg:nth-child(even) .chat-bubble {
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: 16px 0 16px 16px;
+}
+
 .chat-header {
     display: flex;
     justify-content: space-between;
     margin-bottom: 0.5rem;
     font-size: 0.9rem;
+    gap: 1rem;
+}
+
+.chat-msg:nth-child(even) .chat-header {
+    flex-direction: row-reverse;
 }
 
 .chat-callsign {
