@@ -104,26 +104,26 @@ function calculateScore(&$qsos, $my_country, $my_continent) {
             // Points for DX stations
             if ($dxcc['country'] === 'INDONESIA') {
                 $pts = 10;
-                // Multipliers (YB Prefixes) for DX stations
-                if (!isset($worked_prefixes['ALL'][$prefix])) {
-                    $worked_prefixes['ALL'][$prefix] = true;
+                // Multipliers (YB Prefixes) for DX stations per band
+                if (!isset($worked_prefixes[$band][$prefix])) {
+                    $worked_prefixes[$band][$prefix] = true;
                     $is_mult = true;
                 }
-            } elseif ($dxcc['continent'] !== $my_continent) {
-                $pts = 3;
-            } elseif ($dxcc['country'] !== $my_country) {
-                $pts = 2;
+            } elseif ($dxcc['continent'] === $my_continent) {
+                if ($dxcc['country'] === $my_country) {
+                    $pts = 1; // Same country
+                } else {
+                    $pts = 2; // Same continent, different country
+                }
             } else {
-                $pts = 1;
+                $pts = 3; // Different continent
             }
             
-            // DXCC multiplier for DX (legacy logic)
+            // DXCC multiplier for DX per band
             if ($dxcc['country'] !== 'UNKNOWN' && strpos($dxcc['country'], 'UNKNOWN-') === false) {
-                if (!isset($worked_dxcc['ALL'][$dxcc['country']])) {
-                    $worked_dxcc['ALL'][$dxcc['country']] = true;
-                    if ($dxcc['country'] !== 'INDONESIA') {
-                        $is_mult = true;
-                    }
+                if (!isset($worked_dxcc[$band][$dxcc['country']])) {
+                    $worked_dxcc[$band][$dxcc['country']] = true;
+                    $is_mult = true;
                 }
             }
         }
@@ -142,12 +142,11 @@ function calculateScore(&$qsos, $my_country, $my_continent) {
     $total_dxcc = 0;
     $total_prefixes = 0;
     
-    if ($is_indonesian) {
-        foreach ($worked_dxcc as $band => $countries) $total_dxcc += count($countries);
-        foreach ($worked_prefixes as $band => $pfxs) $total_prefixes += count($pfxs);
-    } else {
-        if (isset($worked_dxcc['ALL'])) $total_dxcc = count($worked_dxcc['ALL']);
-        if (isset($worked_prefixes['ALL'])) $total_prefixes = count($worked_prefixes['ALL']);
+    foreach ($worked_dxcc as $band => $countries) {
+        $total_dxcc += count($countries);
+    }
+    foreach ($worked_prefixes as $band => $pfxs) {
+        $total_prefixes += count($pfxs);
     }
     
     $total_multiplier = $total_dxcc + $total_prefixes;
