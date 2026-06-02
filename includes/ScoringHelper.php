@@ -109,7 +109,7 @@ function getBandFromFreq($freq) {
     if ($f >= 14000 && $f <= 14350) return '20M';
     if ($f >= 21000 && $f <= 21450) return '15M';
     if ($f >= 28000 && $f <= 29700) return '10M';
-    // Cadangan/Fallback jika frekuensi pas di tepi batas MHz
+    // Jaga-jaga kalo frekuensinya pas banget di ujung batas MHz
     if ($f == 1800) return '160M';
     if ($f == 3500) return '80M';
     if ($f == 7000) return '40M';
@@ -137,7 +137,7 @@ function calculateScore(&$qsos, $my_country, $my_continent) {
         
         $rcvd = isset($q['rcvd_call']) ? $q['rcvd_call'] : '';
         
-        // Menangani awalan dan ekstraksi DXCC dari callsign stasiun portable
+        // Ngurusin callsign stasiun portable biar prefix sama DXCC-nya dapet
         $parsed_call = getPrefixAndDxccLookup($rcvd);
         $prefix = $parsed_call['prefix'];
         $dxcc = getDxccFromCallsign($parsed_call['dxcc_lookup']);
@@ -149,7 +149,7 @@ function calculateScore(&$qsos, $my_country, $my_continent) {
         $pts = 0;
         
         if ($is_indonesian) {
-            // Poin untuk stasiun Indonesia
+            // Poin khusus buat stasiun lokal Indonesia nih
             if ($dxcc['country'] === 'INDONESIA') {
                 $pts = 0;
             } elseif ($dxcc['continent'] === $my_continent) {
@@ -158,7 +158,7 @@ function calculateScore(&$qsos, $my_country, $my_continent) {
                 $pts = 10;
             }
             
-            // Multiplier (per band) untuk stasiun Indonesia
+            // Multiplier (tiap band) buat stasiun Indonesia
             if ($dxcc['country'] !== 'UNKNOWN' && strpos($dxcc['country'], 'UNKNOWN-') === false) {
                 if (!isset($worked_dxcc[$band][$dxcc['country']])) {
                     $worked_dxcc[$band][$dxcc['country']] = true;
@@ -173,10 +173,10 @@ function calculateScore(&$qsos, $my_country, $my_continent) {
             }
             
         } else {
-            // Poin untuk stasiun DX (Internasional)
+            // Poin buat stasiun DX (bule/internasional)
             if ($dxcc['country'] === 'INDONESIA') {
                 $pts = 10;
-                // Multiplier (Prefix YB) untuk stasiun DX per band
+                // Multiplier (Prefix YB) buat stasiun DX di tiap band
                 if (!isset($worked_prefixes[$band][$prefix])) {
                     $worked_prefixes[$band][$prefix] = true;
                     $is_mult = true;
@@ -184,15 +184,15 @@ function calculateScore(&$qsos, $my_country, $my_continent) {
                 }
             } elseif ($dxcc['continent'] === $my_continent) {
                 if ($dxcc['country'] === $my_country) {
-                    $pts = 1; // Negara yang sama
+                    $pts = 1; // Kalo satu negara
                 } else {
-                    $pts = 2; // Benua yang sama, negara berbeda
+                    $pts = 2; // Satu benua tapi beda negara
                 }
             } else {
-                $pts = 3; // Benua berbeda
+                $pts = 3; // Beda benua bos
             }
             
-            // Multiplier DXCC untuk DX per band
+            // Multiplier DXCC buat DX di tiap band
             if ($dxcc['country'] !== 'UNKNOWN' && strpos($dxcc['country'], 'UNKNOWN-') === false) {
                 if (!isset($worked_dxcc[$band][$dxcc['country']])) {
                     $worked_dxcc[$band][$dxcc['country']] = true;
@@ -213,7 +213,7 @@ function calculateScore(&$qsos, $my_country, $my_continent) {
         $q['mult_count'] = $mult_count;
     }
     
-    // Jumlahkan semua multiplier
+    // Totallin semua multiplier-nya
     $total_dxcc = 0;
     $total_prefixes = 0;
     
@@ -225,7 +225,7 @@ function calculateScore(&$qsos, $my_country, $my_continent) {
     }
     
     $total_multiplier = $total_dxcc + $total_prefixes;
-    if ($total_multiplier == 0) $total_multiplier = 1; // Mencegah pembagian/perkalian dengan nol
+    if ($total_multiplier == 0) $total_multiplier = 1; // Biar nggak error dibagi nol
     
     $raw_score = $total_points * $total_multiplier;
     

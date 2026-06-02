@@ -12,10 +12,10 @@ class CrossChecker {
     }
 
     public function runAdjudication() {
-        // Reset/Kembalikan seluruh status valid/busted/nil/dupe terlebih dahulu (biarkan xqso apa adanya)
+        // Reset/Kembaliin semua status valid/busted/nil/dupe dari awal ya (yang xqso cuekin aja)
         $this->pdo->exec("UPDATE qsos SET status = 'valid', points = 0, is_multiplier = 0 WHERE status != 'xqso'");
         
-        // Ambil semua data peserta
+        // Tarik semua data peserta yang ikutan
         $stmt = $this->pdo->prepare("SELECT * FROM participants WHERE year = ? AND disqualified = 0");
         $stmt->execute([$this->year]);
         $participants = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -28,8 +28,8 @@ class CrossChecker {
             $ubn_reports[$callsign] = "UBN Report for $callsign - YB DX Contest {$this->year}\n";
             $ubn_reports[$callsign] .= "=================================================\n\n";
 
-            // Ambil semua QSO (termasuk xqso agar dapat dilampirkan pada laporan)
-        $qso_stmt = $this->pdo->prepare("SELECT * FROM qsos WHERE participant_id = ? ORDER BY qso_date, qso_time");
+            // Tarik semua QSO-nya (termasuk yang xqso biar bisa dimasukin laporan nanti)
+            $qso_stmt = $this->pdo->prepare("SELECT * FROM qsos WHERE participant_id = ? ORDER BY qso_date, qso_time");
             $qso_stmt->execute([$p_id]);
             $qsos = $qso_stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -56,7 +56,7 @@ class CrossChecker {
                 $rcvd_call = strtoupper($q['rcvd_call']);
                 $band_mode = $q['freq'] . '_' . $q['mode'];
                 
-                // 1. Pengecekan Duplikat (Dupe)
+                // 1. Cek Duplikat (Dupe) nih
                 if (isset($worked_calls[$rcvd_call][$band_mode])) {
                     $this->updateQsoStatus($q['id'], 'dupe', 0, 0);
                     $ubn_reports[$callsign] .= $this->formatQsoLine($q) . " - duplicate QSO\n";
@@ -65,7 +65,7 @@ class CrossChecker {
                 }
                 $worked_calls[$rcvd_call][$band_mode] = true;
 
-                // 2. Pemeriksaan Silang (Cross Check)
+                // 2. Cek Silang (Cross Check) sama log lawan
                 if ($this->hasSubmittedLog($rcvd_call)) {
                     $cross = $this->findMatchingQso($rcvd_call, $callsign, $q);
                     if ($cross['status'] === 'NIL') {
@@ -83,13 +83,13 @@ class CrossChecker {
                         $valid_count++;
                     }
                 } else {
-                    // Lawan komunikasi TIDAK mengirimkan log. Cek apakah ini Unique.
+                    // Kalo lawan NGGA ngirim log, kita cek apakah ini Unique
                     if ($this->isUniqueQso($rcvd_call)) {
                         $this->updateQsoStatus($q['id'], 'unique', 0, 0);
                         $ubn_reports[$callsign] .= $this->formatQsoLine($q) . " - Unique\n";
                         $unique_count++;
                     } else {
-                        // Dianggap Valid karena stasiun lawan dicatat oleh >= 3 partisipan
+                        // Dianggep Valid karena stasiun lawan sempet dicatet sama minimal 3 orang
                         $this->updateQsoStatus($q['id'], 'valid', 0, 0);
                         $ubn_reports[$callsign] .= $this->formatQsoLine($q) . " - valid QSO\n";
                         $valid_count++;
@@ -97,15 +97,15 @@ class CrossChecker {
                 }
             }
             
-            // Setelah semua status berhasil ditandai, ambil HANYA QSO YANG VALID
+            // Nah kalo semua status udah beres, tarik HANYA QSO YANG VALID aja buat diitung
             $valid_stmt = $this->pdo->prepare("SELECT * FROM qsos WHERE participant_id = ? AND status = 'valid' ORDER BY qso_date, qso_time");
             $valid_stmt->execute([$p_id]);
             $valid_qsos = $valid_stmt->fetchAll(PDO::FETCH_ASSOC);
             
-            // Kalkulasi ulang poin dan multiplier menggunakan ScoringHelper
+            // Ngitung ulang poin sama multiplier pake fungsi di ScoringHelper
             $score_data = calculateScore($valid_qsos, $p['country'], $p['continent']);
             
-            // Perbarui data QSO individual di database dengan hasil perhitungan poin dan multiplier final
+            // Update data QSO-nya di database pake hasil hitungan yang baru
             $upd_qso = $this->pdo->prepare("UPDATE qsos SET points = ?, is_multiplier = ? WHERE id = ?");
             foreach ($valid_qsos as $vq) {
                 $upd_qso->execute([$vq['qso_points'], $vq['mult_count'], $vq['id']]);
@@ -117,11 +117,11 @@ class CrossChecker {
             
             $raw_qso = $valid_count + $unique_count + $dupe_count + $busted_count + $nil_count + $xqso_count;
 
-            // Perbarui tabel cabrillo_logs
+            // Update tabel cabrillo_logs nya bro
             $upd = $this->pdo->prepare("UPDATE cabrillo_logs SET raw_score=?, total_qso=?, total_dupes=?, total_points=?, total_multiplier=?, status='adjudicated' WHERE participant_id=?");
             $upd->execute([$final_score, $raw_qso, $dupe_count, $total_points, $total_mults, $p_id]);
 
-            // Simpan file UBN
+            // Simpen file UBN nya ke disk
             $ubn_reports[$callsign] .= "\nSUMMARY\n-------\n";
             $ubn_reports[$callsign] .= "VALID QSOs: $valid_count\n";
             $ubn_reports[$callsign] .= "UNIQUE QSOs: $unique_count\n";
@@ -160,7 +160,7 @@ class CrossChecker {
             $diff = abs($my_time - $their_time);
             $their_band = getBandFromFreq($m['freq']);
             
-            // Toleransi waktu 30 menit = 1800 detik
+            // Kasih toleransi selisih waktu 30 menit (1800 detik) yak
             if ($my_band === $their_band && $my_qso['mode'] === $m['mode'] && $diff <= 1800) {
                 if ($diff < $closest_diff) {
                     $closest_diff = $diff;
@@ -170,7 +170,7 @@ class CrossChecker {
         }
         
         if (!$best_match) {
-            return ['status' => 'NIL']; // Terdapat perbedaan Band, Mode, atau selisih Waktu > 30 menit
+            return ['status' => 'NIL']; // Band, Mode, atau beda waktunya kejauhan (> 30 menit) jadi masuk NIL
         }
         
         if ($my_qso['rcvd_exch'] == $best_match['sent_exch']) {

@@ -2,7 +2,7 @@
 // config.php
 session_start();
 
-// Koneksi Database
+// Nyambungin ke Database nih bosku
 $host = '127.0.0.1';
 $dbname = 'ybdxcontest';
 $user = 'root';
@@ -12,24 +12,24 @@ try {
     $pdo = new PDO("mysql:host=$host;dbname=$dbname", $user, $pass);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch (PDOException $e) {
-    die("Koneksi database gagal: " . $e->getMessage());
+    die("Waduh, koneksi database jebol: " . $e->getMessage());
 }
 
 // ---------------------------------------------------------
-// Kalkulasi Jadwal Kontes
-// "Setiap hari Sabtu di minggu kedua bulan Januari"
+// Ngitung Jadwal Kontes
+// "Tiap hari Sabtu di minggu kedua bulan Januari yak"
 // ---------------------------------------------------------
 function getContestDate($year) {
-    // Cari hari pertama bulan Januari
+    // Cari tanggal 1 Januari dulu
     $firstDay = new DateTime("$year-01-01 00:00:00", new DateTimeZone('UTC'));
     
-    // Cari hari Sabtu pertama
+    // Cari hari Sabtu pertama, gas!
     $firstSaturday = clone $firstDay;
     if ($firstSaturday->format('w') != 6) {
         $firstSaturday->modify('next Saturday');
     }
     
-    // Sabtu kedua adalah tepat 7 hari setelah Sabtu pertama
+    // Nah, Sabtu kedua tuh pas banget 7 hari abis Sabtu pertama
     $secondSaturday = clone $firstSaturday;
     $secondSaturday->modify('+7 days');
     
@@ -42,12 +42,12 @@ function getContestDate($year) {
     ];
 }
 
-// Variabel global untuk tahun kontes berjalan (bisa dikonfigurasi)
+// Variabel global buat nentuin tahun kontes sekarang (bisa diutak-atik sih)
 $current_contest_year = date('Y');
 $contest_schedule = getContestDate($current_contest_year);
 
 // ---------------------------------------------------------
-// Pengaturan Bilingual (ID / EN)
+// Seting Bahasa (ID / EN) biar keren
 // ---------------------------------------------------------
 if (isset($_GET['lang'])) {
     if (in_array($_GET['lang'], ['id', 'en'])) {

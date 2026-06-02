@@ -3,19 +3,19 @@
 
 $host = '127.0.0.1';
 $user = 'root';
-$pass = ''; // bawaan XAMPP tanpa password
+$pass = ''; // bawaan XAMPP emang polosan tanpa password bro
 
 try {
     $pdo = new PDO("mysql:host=$host", $user, $pass);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     
-    // Buat DB jika belum ada
+    // Bikin DB baru kalo misalnya belum ada, sikat!
     $pdo->exec("CREATE DATABASE IF NOT EXISTS ybdxcontest CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
     $pdo->exec("USE ybdxcontest");
     
-    echo "Database 'ybdxcontest' berhasil dibuat/dipilih.\n";
+    echo "Mantap! Database 'ybdxcontest' udah kebuat/kepilih ya.\n";
 
-    // 1. Tabel users (Admin/Manajer)
+    // 1. Tabel users (Buat login Admin/Manajer nih)
     $pdo->exec("CREATE TABLE IF NOT EXISTS users (
         id INT AUTO_INCREMENT PRIMARY KEY,
         username VARCHAR(50) NOT NULL UNIQUE,
@@ -24,11 +24,11 @@ try {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )");
 
-    // Masukkan admin bawaan (default)
+    // Masukin admin bawaan (default) biar ga kosong banget
     $hash = password_hash('admin123', PASSWORD_DEFAULT);
     $pdo->exec("INSERT IGNORE INTO users (username, password, role) VALUES ('admin', '$hash', 'admin')");
 
-    // 2. Tabel smtp_config
+    // 2. Tabel smtp_config (Buat nyeting email)
     $pdo->exec("CREATE TABLE IF NOT EXISTS smtp_config (
         id INT AUTO_INCREMENT PRIMARY KEY,
         host VARCHAR(255),
@@ -41,10 +41,10 @@ try {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )");
     
-    // Masukkan baris data dummy jika masih kosong
+    // Masukin data dummy aja dulu kalo tabelnya masih kosong melompong
     $pdo->exec("INSERT IGNORE INTO smtp_config (id, host, port, username, password, encryption, from_email, from_name) VALUES (1, 'smtp.example.com', 587, 'user@example.com', 'secret', 'tls', 'contest@example.com', 'YB DX Contest Robot')");
 
-    // 3. Tabel participants
+    // 3. Tabel participants (Daftar peserta yang ikutan)
     $pdo->exec("CREATE TABLE IF NOT EXISTS participants (
         id INT AUTO_INCREMENT PRIMARY KEY,
         callsign VARCHAR(50) NOT NULL,
@@ -63,7 +63,7 @@ try {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )");
 
-    // 4. Tabel cabrillo_logs
+    // 4. Tabel cabrillo_logs (Buat nampung file log cabrillo)
     $pdo->exec("CREATE TABLE IF NOT EXISTS cabrillo_logs (
         id INT AUTO_INCREMENT PRIMARY KEY,
         participant_id INT NOT NULL,
@@ -79,7 +79,7 @@ try {
         FOREIGN KEY (participant_id) REFERENCES participants(id) ON DELETE CASCADE
     )");
 
-    // 5. Tabel qsos
+    // 5. Tabel qsos (Daftar komunikasi yang sukses)
     $pdo->exec("CREATE TABLE IF NOT EXISTS qsos (
         id BIGINT AUTO_INCREMENT PRIMARY KEY,
         participant_id INT NOT NULL,
@@ -99,7 +99,7 @@ try {
         FOREIGN KEY (participant_id) REFERENCES participants(id) ON DELETE CASCADE
     )");
 
-    // 6. Tabel plaques
+    // 6. Tabel plaques (Plakat/Piala nih)
     $pdo->exec("CREATE TABLE IF NOT EXISTS plaques (
         id INT AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
@@ -108,7 +108,7 @@ try {
         year INT NOT NULL
     )");
 
-    // 7. Tabel plaque_winners
+    // 7. Tabel plaque_winners (Siapa aja yang menang piala)
     $pdo->exec("CREATE TABLE IF NOT EXISTS plaque_winners (
         id INT AUTO_INCREMENT PRIMARY KEY,
         plaque_id INT NOT NULL,
@@ -118,14 +118,14 @@ try {
         FOREIGN KEY (participant_id) REFERENCES participants(id) ON DELETE SET NULL
     )");
 
-    // 8. Tabel certificates_bg
+    // 8. Tabel certificates_bg (Background sertifikat)
     $pdo->exec("CREATE TABLE IF NOT EXISTS certificates_bg (
         id INT AUTO_INCREMENT PRIMARY KEY,
         year INT NOT NULL UNIQUE,
         image_path VARCHAR(255) NOT NULL
     )");
 
-    // 9. Tabel committee
+    // 9. Tabel committee (Panitia/Pengurus kontes)
     $pdo->exec("CREATE TABLE IF NOT EXISTS committee (
         id INT AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(100) NOT NULL,
@@ -134,8 +134,8 @@ try {
         year INT NOT NULL
     )");
 
-    echo "Semua tabel berhasil dibuat!\n";
+    echo "Sip lah! Semua tabel udah beres dibikin!\n";
 
 } catch (PDOException $e) {
-    die("Pengaturan database gagal: " . $e->getMessage() . "\n");
+    die("Waduh, setting database-nya gagal bro: " . $e->getMessage() . "\n");
 }
