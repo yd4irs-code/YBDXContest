@@ -1,5 +1,6 @@
 # YB DX Contest Robot
 
+![YB DX Contest Banner](assets/banner-YBDXContest.jpg)
 **YB DX Contest Robot** adalah sebuah *platform* web aplikasi interaktif dan otonom (sistem juri otomatis) yang dirancang khusus untuk memfasilitasi penerimaan, pengolahan, dan ajudikasi (penjurian) log data komunikasi (QSO) amatir radio dalam format standar internasional **Cabrillo**. 
 
 Aplikasi ini dibangun murni menggunakan **Vanilla PHP (PDO)**, **Vanilla CSS (Glassmorphism & Dark Mode)**, dan **MySQL**, tanpa menggunakan *framework* pihak ketiga yang berat (seperti Laravel, React, Tailwind, dll). Arsitektur minimalis ini menjamin kecepatan eksekusi yang luar biasa kencang, aman, dan sangat mudah untuk dimigrasikan ke segala jenis peladen web (*web server*).
