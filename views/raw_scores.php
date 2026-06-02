@@ -12,7 +12,9 @@ $stmt_status = $pdo->query("SELECT status FROM cabrillo_logs JOIN participants p
 $global_status = $stmt_status->fetchColumn();
 $is_adjudicated = ($global_status === 'adjudicated');
 
-// Handle Form Submission
+// Handle Form Submission or GET link
+$callsign_to_view = '';
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_pin'])) {
     $callsign = strtoupper(trim($_POST['callsign']));
     $pin = isset($_POST['pin']) ? trim($_POST['pin']) : '';
@@ -29,11 +31,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_pin'])) {
     
     if (!$participant_detail) {
         $pin_error = $is_adjudicated ? "Callsign not found." : "Invalid Callsign or PIN.";
+        $callsign_to_view = $callsign;
     } else {
         // Fetch QSOs
         $stmt = $pdo->prepare("SELECT * FROM qsos WHERE participant_id = ?");
         $stmt->execute([$participant_detail['id']]);
         $qso_details = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+} elseif (isset($_GET['view_callsign'])) {
+    $callsign_to_view = strtoupper(trim($_GET['view_callsign']));
+    
+    if ($is_adjudicated) {
+        $stmt = $pdo->prepare("SELECT p.*, c.raw_score, c.total_qso, c.status as adjudication_status FROM participants p JOIN cabrillo_logs c ON p.id = c.participant_id WHERE p.callsign = ? AND p.year = ?");
+        $stmt->execute([$callsign_to_view, $current_contest_year]);
+        $participant_detail = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$participant_detail) {
+            $pin_error = "Callsign not found.";
+        } else {
+            $stmt = $pdo->prepare("SELECT * FROM qsos WHERE participant_id = ?");
+            $stmt->execute([$participant_detail['id']]);
+            $qso_details = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        }
     }
 }
 
@@ -125,12 +144,12 @@ if (!$participant_detail) {
                 <form method="post" style="display: flex; gap: 1rem; align-items: flex-end; margin-top: 1rem; flex-wrap: wrap;">
                     <div style="flex: 1; min-width: 200px;">
                         <label>Callsign</label>
-                        <input type="text" name="callsign" required placeholder="e.g. YB1XYZ">
+                        <input type="text" name="callsign" id="callsign_input" required placeholder="e.g. YB1XYZ" value="<?php echo htmlspecialchars($callsign_to_view); ?>">
                     </div>
                     <?php if (!$is_adjudicated): ?>
                     <div style="flex: 1; min-width: 200px;">
                         <label>6-Digit Access Code (PIN)</label>
-                        <input type="password" name="pin" required placeholder="XXXXXX">
+                        <input type="password" name="pin" id="pin_input" required placeholder="XXXXXX">
                     </div>
                     <?php endif; ?>
                     <div>
@@ -190,7 +209,11 @@ if (!$participant_detail) {
                                                                                 foreach($participants as $p): ?>
                                                                                 <tr>
                                                                                     <td><?php echo $rank++; ?></td>
-                                                                                    <td style="font-weight: 600; color: var(--accent-hover);"><?php echo htmlspecialchars($p['callsign']); ?></td>
+                                                                                    <td style="font-weight: 600;">
+                                                                                        <a href="javascript:void(0)" onclick="viewCallsign('<?php echo htmlspecialchars(addslashes($p['callsign'])); ?>')" style="color: var(--accent-hover); text-decoration: none;">
+                                                                                            <?php echo htmlspecialchars($p['callsign']); ?>
+                                                                                        </a>
+                                                                                    </td>
                                                                                     <td style="text-align: right;"><?php echo $p['total_qso']; ?></td>
                                                                                     <td style="text-align: right; font-weight: bold;"><?php echo number_format($p['raw_score']); ?></td>
                                                                                 </tr>
@@ -216,3 +239,19 @@ if (!$participant_detail) {
         </div>
     <?php endif; ?>
 </div>
+
+<script>
+function viewCallsign(callsign) {
+    <?php if ($is_adjudicated): ?>
+    window.location.href = 'index.php?page=raw_scores&view_callsign=' + encodeURIComponent(callsign);
+    <?php else: ?>
+    var callsignInput = document.getElementById('callsign_input');
+    var pinInput = document.getElementById('pin_input');
+    
+    if(callsignInput) callsignInput.value = callsign;
+    if(pinInput) pinInput.focus();
+    
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    <?php endif; ?>
+}
+</script>

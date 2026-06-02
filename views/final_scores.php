@@ -96,7 +96,11 @@ foreach ($logs as $log) {
                                                                                           else echo $rank; 
                                                                                     ?>
                                                                                 </td>
-                                                                                <td style="font-weight: 600; color: var(--accent-hover);"><?php echo htmlspecialchars($p['callsign']); ?></td>
+                                                                                <td style="font-weight: 600;">
+                                                                                    <a href="index.php?page=raw_scores&view_callsign=<?php echo urlencode($p['callsign']); ?>" style="color: var(--accent-hover); text-decoration: none;">
+                                                                                        <?php echo htmlspecialchars($p['callsign']); ?>
+                                                                                    </a>
+                                                                                </td>
                                                                                 <td style="text-align: right;"><?php echo $p['total_qso']; ?></td>
                                                                                 <td style="text-align: right;"><?php echo $p['total_points']; ?></td>
                                                                                 <td style="text-align: right;"><?php echo $p['total_multiplier']; ?></td>
