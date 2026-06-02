@@ -156,7 +156,7 @@ class CabrilloParser {
             }
 
             // Timeframe validation
-            $qso_datetime = DateTime::createFromFormat('Y-m-d HHi', $qso['date'] . ' ' . $qso['time'], new DateTimeZone('UTC'));
+            $qso_datetime = DateTime::createFromFormat('Y-m-d Hi', $qso['date'] . ' ' . $qso['time'], new DateTimeZone('UTC'));
             if (!$qso_datetime) {
                 // Try Y-m-d H:i (some logs might have colons)
                 $qso_datetime = DateTime::createFromFormat('Y-m-d H:i', $qso['date'] . ' ' . $qso['time'], new DateTimeZone('UTC'));
