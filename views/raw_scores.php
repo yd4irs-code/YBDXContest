@@ -132,10 +132,8 @@ if (!$participant_detail) {
                             <th>Freq</th>
                             <th>Mode</th>
                             <th>Sent Call</th>
-                            <th>Sent RST</th>
                             <th>Sent NR</th>
                             <th>Rcvd Call</th>
-                            <th>Rcvd RST</th>
                             <th>Rcvd NR</th>
                             <th>Status</th>
                             <th style="text-align: center;">Points</th>
@@ -151,10 +149,8 @@ if (!$participant_detail) {
                             <td><?php echo htmlspecialchars($q['freq']); ?></td>
                             <td><?php echo htmlspecialchars($q['mode']); ?></td>
                             <td><?php echo htmlspecialchars($q['sent_call']); ?></td>
-                            <td><?php echo htmlspecialchars($q['sent_rst']); ?></td>
                             <td><?php echo htmlspecialchars($q['sent_exch']); ?></td>
                             <td><?php echo htmlspecialchars($q['rcvd_call']); ?></td>
-                            <td><?php echo htmlspecialchars($q['rcvd_rst']); ?></td>
                             <td><?php echo htmlspecialchars($q['rcvd_exch']); ?></td>
                             <td>
                                 <?php 
