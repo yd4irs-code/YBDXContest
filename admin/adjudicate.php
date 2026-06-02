@@ -11,7 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['run_adj'])) {
         $checker = new CrossChecker($pdo, $current_contest_year);
         $checker->runAdjudication();
         
-        // Reset/Clear all PINs after adjudication is complete
+        // Reset/Hapus semua PIN setelah proses ajudikasi selesai
         $pdo->prepare("UPDATE participants SET access_code = NULL WHERE year = ?")->execute([$current_contest_year]);
         
         $message = "Adjudication process completed successfully! All PINs have been reset.";
@@ -20,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['run_adj'])) {
     }
 }
 
-// Check status
+// Cek status saat ini
 $stmt = $pdo->query("SELECT status FROM cabrillo_logs JOIN participants p ON cabrillo_logs.participant_id = p.id WHERE p.year = $current_contest_year LIMIT 1");
 $status = $stmt->fetchColumn();
 

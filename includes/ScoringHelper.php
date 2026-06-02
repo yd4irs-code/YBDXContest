@@ -109,7 +109,7 @@ function getBandFromFreq($freq) {
     if ($f >= 14000 && $f <= 14350) return '20M';
     if ($f >= 21000 && $f <= 21450) return '15M';
     if ($f >= 28000 && $f <= 29700) return '10M';
-    // Fallback if freq is exactly MHz edge
+    // Cadangan/Fallback jika frekuensi pas di tepi batas MHz
     if ($f == 1800) return '160M';
     if ($f == 3500) return '80M';
     if ($f == 7000) return '40M';
@@ -137,7 +137,7 @@ function calculateScore(&$qsos, $my_country, $my_continent) {
         
         $rcvd = isset($q['rcvd_call']) ? $q['rcvd_call'] : '';
         
-        // Handle portable callsigns for prefix and DXCC lookup
+        // Menangani awalan dan ekstraksi DXCC dari callsign stasiun portable
         $parsed_call = getPrefixAndDxccLookup($rcvd);
         $prefix = $parsed_call['prefix'];
         $dxcc = getDxccFromCallsign($parsed_call['dxcc_lookup']);
@@ -149,7 +149,7 @@ function calculateScore(&$qsos, $my_country, $my_continent) {
         $pts = 0;
         
         if ($is_indonesian) {
-            // Points for Indonesian stations
+            // Poin untuk stasiun Indonesia
             if ($dxcc['country'] === 'INDONESIA') {
                 $pts = 0;
             } elseif ($dxcc['continent'] === $my_continent) {
@@ -158,7 +158,7 @@ function calculateScore(&$qsos, $my_country, $my_continent) {
                 $pts = 10;
             }
             
-            // Multipliers (per band) for Indonesian stations
+            // Multiplier (per band) untuk stasiun Indonesia
             if ($dxcc['country'] !== 'UNKNOWN' && strpos($dxcc['country'], 'UNKNOWN-') === false) {
                 if (!isset($worked_dxcc[$band][$dxcc['country']])) {
                     $worked_dxcc[$band][$dxcc['country']] = true;
@@ -173,10 +173,10 @@ function calculateScore(&$qsos, $my_country, $my_continent) {
             }
             
         } else {
-            // Points for DX stations
+            // Poin untuk stasiun DX (Internasional)
             if ($dxcc['country'] === 'INDONESIA') {
                 $pts = 10;
-                // Multipliers (YB Prefixes) for DX stations per band
+                // Multiplier (Prefix YB) untuk stasiun DX per band
                 if (!isset($worked_prefixes[$band][$prefix])) {
                     $worked_prefixes[$band][$prefix] = true;
                     $is_mult = true;
@@ -184,15 +184,15 @@ function calculateScore(&$qsos, $my_country, $my_continent) {
                 }
             } elseif ($dxcc['continent'] === $my_continent) {
                 if ($dxcc['country'] === $my_country) {
-                    $pts = 1; // Same country
+                    $pts = 1; // Negara yang sama
                 } else {
-                    $pts = 2; // Same continent, different country
+                    $pts = 2; // Benua yang sama, negara berbeda
                 }
             } else {
-                $pts = 3; // Different continent
+                $pts = 3; // Benua berbeda
             }
             
-            // DXCC multiplier for DX per band
+            // Multiplier DXCC untuk DX per band
             if ($dxcc['country'] !== 'UNKNOWN' && strpos($dxcc['country'], 'UNKNOWN-') === false) {
                 if (!isset($worked_dxcc[$band][$dxcc['country']])) {
                     $worked_dxcc[$band][$dxcc['country']] = true;
@@ -213,7 +213,7 @@ function calculateScore(&$qsos, $my_country, $my_continent) {
         $q['mult_count'] = $mult_count;
     }
     
-    // Sum up multipliers
+    // Jumlahkan semua multiplier
     $total_dxcc = 0;
     $total_prefixes = 0;
     
@@ -225,7 +225,7 @@ function calculateScore(&$qsos, $my_country, $my_continent) {
     }
     
     $total_multiplier = $total_dxcc + $total_prefixes;
-    if ($total_multiplier == 0) $total_multiplier = 1; // Prevent zero
+    if ($total_multiplier == 0) $total_multiplier = 1; // Mencegah pembagian/perkalian dengan nol
     
     $raw_score = $total_points * $total_multiplier;
     

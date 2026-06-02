@@ -10,7 +10,7 @@ class CabrilloParser {
     public $version = '';
     public $is_v2 = false;
     
-    // Contest config
+    // Konfigurasi kontes
     private $contest_start_ts;
     private $contest_end_ts;
 
@@ -18,7 +18,7 @@ class CabrilloParser {
         $this->file_lines = file($file_path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
         
         $schedule = getContestDate($contest_year);
-        // Explicitly parse contest schedule boundaries as UTC
+        // Parsing batas jadwal kontes secara eksplisit menggunakan zona waktu UTC
         $start_dt = new DateTime($schedule['start'], new DateTimeZone('UTC'));
         $end_dt = new DateTime($schedule['end'], new DateTimeZone('UTC'));
         $this->contest_start_ts = $start_dt->getTimestamp();
@@ -76,7 +76,7 @@ class CabrilloParser {
         $is_x_qso = (strpos($line, 'X-QSO:') === 0);
         $data_str = $is_x_qso ? trim(substr($line, 6)) : trim(substr($line, 4));
         
-        // Split by multiple spaces
+        // Pisahkan bagian berdasarkan spasi ganda/lebih
         $parts = preg_split('/\s+/', $data_str);
         
         if (count($parts) >= 10) {
@@ -112,7 +112,7 @@ class CabrilloParser {
     }
 
     private function validate() {
-        // 1. Check required headers
+        // 1. Periksa header yang wajib diisi
         $required_headers = ['CALLSIGN', 'CATEGORY-OPERATOR', 'CATEGORY-BAND', 'CATEGORY-POWER'];
         foreach ($required_headers as $req) {
             if (!isset($this->headers[$req]) || empty($this->headers[$req])) {
@@ -120,11 +120,11 @@ class CabrilloParser {
             }
         }
 
-        // 2. Validate Operator Count
+        // 2. Validasi Jumlah Operator
         if (isset($this->headers['CATEGORY-OPERATOR']) && isset($this->headers['OPERATORS'])) {
             $cat_op = strtoupper($this->headers['CATEGORY-OPERATOR']);
             $operators = preg_split('/[\s,]+/', trim($this->headers['OPERATORS']));
-            $operators = array_filter($operators); // remove empty
+            $operators = array_filter($operators); // hapus entri kosong
             
             if ($cat_op == 'SINGLE-OP' && count($operators) > 1) {
                 $this->errors[] = "SINGLE-OP category only allows 1 callsign in OPERATORS header.";
@@ -133,7 +133,7 @@ class CabrilloParser {
             }
         }
 
-        // 3. Validate CATEGORY-MODE is SSB
+        // 3. Validasi CATEGORY-MODE harus SSB
         if (isset($this->headers['CATEGORY-MODE'])) {
             if (strtoupper($this->headers['CATEGORY-MODE']) !== 'SSB') {
                 $this->errors[] = "CATEGORY-MODE must be SSB. Invalid mode found: " . $this->headers['CATEGORY-MODE'];
@@ -142,26 +142,26 @@ class CabrilloParser {
 
         $header_callsign = isset($this->headers['CALLSIGN']) ? strtoupper($this->headers['CALLSIGN']) : '';
 
-        // Validate each QSO
+        // Validasi tiap baris QSO
         foreach ($this->qsos as &$qso) {
-            if ($qso['is_xqso']) continue; // already marked
+            if ($qso['is_xqso']) continue; // lewati baris yang sudah ditandai
 
-            // Anti-Cheat: Sent Call must match Header Callsign
+            // Anti-Cheat: Callsign pengirim harus sama dengan CALLSIGN pada header
             if ($qso['sent_call'] !== $header_callsign) {
                 $qso['is_xqso'] = true;
                 $qso['error_reasons'][] = "Sent callsign ({$qso['sent_call']}) does not match header CALLSIGN ($header_callsign)";
             }
 
-            // Mode must be PH
+            // Mode harus PH (Phone/SSB)
             if ($qso['mode'] !== 'PH') {
                 $qso['is_xqso'] = true;
                 $qso['error_reasons'][] = "Invalid mode ({$qso['mode']}). Only PH is allowed in QSO line.";
             }
 
-            // Timeframe validation
+            // Validasi Kerangka Waktu
             $qso_datetime = DateTime::createFromFormat('Y-m-d Hi', $qso['date'] . ' ' . $qso['time'], new DateTimeZone('UTC'));
             if (!$qso_datetime) {
-                // Try Y-m-d H:i (some logs might have colons)
+                // Coba format Y-m-d H:i (beberapa log mungkin menggunakan titik dua pada waktu)
                 $qso_datetime = DateTime::createFromFormat('Y-m-d H:i', $qso['date'] . ' ' . $qso['time'], new DateTimeZone('UTC'));
             }
             
@@ -179,7 +179,7 @@ class CabrilloParser {
     }
 
     public function generateV3Content() {
-        // Build new content array
+        // Susun struktur konten file V3 yang baru
         $content = ["START-OF-LOG: 3.0"];
         foreach ($this->headers as $k => $v) {
             if ($k === 'SOAPBOX') {
@@ -194,7 +194,7 @@ class CabrilloParser {
         
         foreach ($this->qsos as $qso) {
             $prefix = $qso['is_xqso'] ? 'X-QSO:' : 'QSO:';
-            // Align spacing nicely
+            // Rapikan jarak spasi antar kolom data
             $line = sprintf("%s %5s %2s %s %s %-10s %3s %-6s %-10s %3s %-6s",
                 $prefix,
                 $qso['freq'],

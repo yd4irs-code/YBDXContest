@@ -2,7 +2,7 @@
 // includes/PdfGenerator.php
 require_once __DIR__ . '/../config.php';
 
-// Suppress errors for development in case mPDF isn't installed
+// Sembunyikan error pada mode pengembangan jika mPDF belum diinstal
 if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
     require_once __DIR__ . '/../vendor/autoload.php';
 }
@@ -10,7 +10,7 @@ if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
 class PdfGenerator {
     
     public static function generateCertificate($participant, $background_img_path) {
-        // If mPDF is not installed yet, just output a simple HTML mock
+        // Jika mPDF belum terinstal, cukup tampilkan tiruan (mock) berupa HTML sederhana
         if (!class_exists('\Mpdf\Mpdf')) {
             echo "<h2>[MOCK CERTIFICATE]</h2>";
             echo "<p>mPDF library is not installed. Please run <code>composer require mpdf/mpdf</code> in the project root.</p>";
@@ -22,20 +22,20 @@ class PdfGenerator {
         try {
             $mpdf = new \Mpdf\Mpdf([
                 'mode' => 'utf-8', 
-                'format' => 'A4-L', // Landscape
+                'format' => 'A4-L', // Lanskap (Landscape)
                 'margin_left' => 0,
                 'margin_right' => 0,
                 'margin_top' => 0,
                 'margin_bottom' => 0
             ]);
 
-            // Assuming $background_img_path is an absolute path or relative to project root
+            // Asumsi $background_img_path adalah path absolut atau relatif terhadap root proyek
             $bg_html = '';
             if (file_exists($background_img_path)) {
                 $bg_html = 'background-image: url("' . $background_img_path . '"); background-image-resize: 6;';
             }
 
-            // Design HTML template
+            // Templat desain HTML untuk Piagam/Sertifikat
             $html = '
             <style>
                 body {

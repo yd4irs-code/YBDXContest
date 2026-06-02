@@ -2,7 +2,7 @@
 // config.php
 session_start();
 
-// Database connection
+// Koneksi Database
 $host = '127.0.0.1';
 $dbname = 'ybdxcontest';
 $user = 'root';
@@ -12,24 +12,24 @@ try {
     $pdo = new PDO("mysql:host=$host;dbname=$dbname", $user, $pass);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch (PDOException $e) {
-    die("Database connection failed: " . $e->getMessage());
+    die("Koneksi database gagal: " . $e->getMessage());
 }
 
 // ---------------------------------------------------------
-// Contest Schedule Calculation
+// Kalkulasi Jadwal Kontes
 // "Setiap hari Sabtu di minggu kedua bulan Januari"
 // ---------------------------------------------------------
 function getContestDate($year) {
-    // Find the first day of January
+    // Cari hari pertama bulan Januari
     $firstDay = new DateTime("$year-01-01 00:00:00", new DateTimeZone('UTC'));
     
-    // Find the first Saturday
+    // Cari hari Sabtu pertama
     $firstSaturday = clone $firstDay;
     if ($firstSaturday->format('w') != 6) {
         $firstSaturday->modify('next Saturday');
     }
     
-    // Second Saturday is exactly 7 days after the first Saturday
+    // Sabtu kedua adalah tepat 7 hari setelah Sabtu pertama
     $secondSaturday = clone $firstSaturday;
     $secondSaturday->modify('+7 days');
     
@@ -42,12 +42,12 @@ function getContestDate($year) {
     ];
 }
 
-// Global variable for current contest year (can be configured)
+// Variabel global untuk tahun kontes berjalan (bisa dikonfigurasi)
 $current_contest_year = date('Y');
 $contest_schedule = getContestDate($current_contest_year);
 
 // ---------------------------------------------------------
-// Bilingual Setup (ID / EN)
+// Pengaturan Bilingual (ID / EN)
 // ---------------------------------------------------------
 if (isset($_GET['lang'])) {
     if (in_array($_GET['lang'], ['id', 'en'])) {

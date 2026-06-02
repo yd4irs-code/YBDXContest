@@ -3,19 +3,19 @@
 
 $host = '127.0.0.1';
 $user = 'root';
-$pass = ''; // default XAMPP no password
+$pass = ''; // bawaan XAMPP tanpa password
 
 try {
     $pdo = new PDO("mysql:host=$host", $user, $pass);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     
-    // Create DB if not exists
+    // Buat DB jika belum ada
     $pdo->exec("CREATE DATABASE IF NOT EXISTS ybdxcontest CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
     $pdo->exec("USE ybdxcontest");
     
-    echo "Database 'ybdxcontest' created/selected.\n";
+    echo "Database 'ybdxcontest' berhasil dibuat/dipilih.\n";
 
-    // 1. Table users (Admin/Manager)
+    // 1. Tabel users (Admin/Manajer)
     $pdo->exec("CREATE TABLE IF NOT EXISTS users (
         id INT AUTO_INCREMENT PRIMARY KEY,
         username VARCHAR(50) NOT NULL UNIQUE,
@@ -24,11 +24,11 @@ try {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )");
 
-    // Insert default admin
+    // Masukkan admin bawaan (default)
     $hash = password_hash('admin123', PASSWORD_DEFAULT);
     $pdo->exec("INSERT IGNORE INTO users (username, password, role) VALUES ('admin', '$hash', 'admin')");
 
-    // 2. Table smtp_config
+    // 2. Tabel smtp_config
     $pdo->exec("CREATE TABLE IF NOT EXISTS smtp_config (
         id INT AUTO_INCREMENT PRIMARY KEY,
         host VARCHAR(255),
@@ -41,10 +41,10 @@ try {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )");
     
-    // Insert dummy row if empty
+    // Masukkan baris data dummy jika masih kosong
     $pdo->exec("INSERT IGNORE INTO smtp_config (id, host, port, username, password, encryption, from_email, from_name) VALUES (1, 'smtp.example.com', 587, 'user@example.com', 'secret', 'tls', 'contest@example.com', 'YB DX Contest Robot')");
 
-    // 3. Table participants
+    // 3. Tabel participants
     $pdo->exec("CREATE TABLE IF NOT EXISTS participants (
         id INT AUTO_INCREMENT PRIMARY KEY,
         callsign VARCHAR(50) NOT NULL,
@@ -63,7 +63,7 @@ try {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )");
 
-    // 4. Table cabrillo_logs
+    // 4. Tabel cabrillo_logs
     $pdo->exec("CREATE TABLE IF NOT EXISTS cabrillo_logs (
         id INT AUTO_INCREMENT PRIMARY KEY,
         participant_id INT NOT NULL,
@@ -79,7 +79,7 @@ try {
         FOREIGN KEY (participant_id) REFERENCES participants(id) ON DELETE CASCADE
     )");
 
-    // 5. Table qsos
+    // 5. Tabel qsos
     $pdo->exec("CREATE TABLE IF NOT EXISTS qsos (
         id BIGINT AUTO_INCREMENT PRIMARY KEY,
         participant_id INT NOT NULL,
@@ -99,7 +99,7 @@ try {
         FOREIGN KEY (participant_id) REFERENCES participants(id) ON DELETE CASCADE
     )");
 
-    // 6. Table plaques
+    // 6. Tabel plaques
     $pdo->exec("CREATE TABLE IF NOT EXISTS plaques (
         id INT AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
@@ -108,7 +108,7 @@ try {
         year INT NOT NULL
     )");
 
-    // 7. Table plaque_winners
+    // 7. Tabel plaque_winners
     $pdo->exec("CREATE TABLE IF NOT EXISTS plaque_winners (
         id INT AUTO_INCREMENT PRIMARY KEY,
         plaque_id INT NOT NULL,
@@ -118,14 +118,14 @@ try {
         FOREIGN KEY (participant_id) REFERENCES participants(id) ON DELETE SET NULL
     )");
 
-    // 8. Table certificates_bg
+    // 8. Tabel certificates_bg
     $pdo->exec("CREATE TABLE IF NOT EXISTS certificates_bg (
         id INT AUTO_INCREMENT PRIMARY KEY,
         year INT NOT NULL UNIQUE,
         image_path VARCHAR(255) NOT NULL
     )");
 
-    // 9. Table committee
+    // 9. Tabel committee
     $pdo->exec("CREATE TABLE IF NOT EXISTS committee (
         id INT AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(100) NOT NULL,
@@ -134,8 +134,8 @@ try {
         year INT NOT NULL
     )");
 
-    echo "All tables created successfully!\n";
+    echo "Semua tabel berhasil dibuat!\n";
 
 } catch (PDOException $e) {
-    die("Database setup failed: " . $e->getMessage() . "\n");
+    die("Pengaturan database gagal: " . $e->getMessage() . "\n");
 }

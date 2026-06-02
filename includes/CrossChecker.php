@@ -12,10 +12,10 @@ class CrossChecker {
     }
 
     public function runAdjudication() {
-        // Reset all valid/busted/nil/dupe statuses first (keep xqso as is)
+        // Reset/Kembalikan seluruh status valid/busted/nil/dupe terlebih dahulu (biarkan xqso apa adanya)
         $this->pdo->exec("UPDATE qsos SET status = 'valid', points = 0, is_multiplier = 0 WHERE status != 'xqso'");
         
-        // Fetch all participants
+        // Ambil semua data peserta
         $stmt = $this->pdo->prepare("SELECT * FROM participants WHERE year = ? AND disqualified = 0");
         $stmt->execute([$this->year]);
         $participants = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -28,8 +28,8 @@ class CrossChecker {
             $ubn_reports[$callsign] = "UBN Report for $callsign - YB DX Contest {$this->year}\n";
             $ubn_reports[$callsign] .= "=================================================\n\n";
 
-            // Fetch QSOs (including xqso so we can report them)
-            $qso_stmt = $this->pdo->prepare("SELECT * FROM qsos WHERE participant_id = ? ORDER BY qso_date, qso_time");
+            // Ambil semua QSO (termasuk xqso agar dapat dilampirkan pada laporan)
+        $qso_stmt = $this->pdo->prepare("SELECT * FROM qsos WHERE participant_id = ? ORDER BY qso_date, qso_time");
             $qso_stmt->execute([$p_id]);
             $qsos = $qso_stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -56,7 +56,7 @@ class CrossChecker {
                 $rcvd_call = strtoupper($q['rcvd_call']);
                 $band_mode = $q['freq'] . '_' . $q['mode'];
                 
-                // 1. Dupe Check
+                // 1. Pengecekan Duplikat (Dupe)
                 if (isset($worked_calls[$rcvd_call][$band_mode])) {
                     $this->updateQsoStatus($q['id'], 'dupe', 0, 0);
                     $ubn_reports[$callsign] .= $this->formatQsoLine($q) . " - duplicate QSO\n";
@@ -65,7 +65,7 @@ class CrossChecker {
                 }
                 $worked_calls[$rcvd_call][$band_mode] = true;
 
-                // 2. Cross Check
+                // 2. Pemeriksaan Silang (Cross Check)
                 if ($this->hasSubmittedLog($rcvd_call)) {
                     $cross = $this->findMatchingQso($rcvd_call, $callsign, $q);
                     if ($cross['status'] === 'NIL') {
@@ -83,13 +83,13 @@ class CrossChecker {
                         $valid_count++;
                     }
                 } else {
-                    // Did NOT submit a log. Check if Unique.
+                    // Lawan komunikasi TIDAK mengirimkan log. Cek apakah ini Unique.
                     if ($this->isUniqueQso($rcvd_call)) {
                         $this->updateQsoStatus($q['id'], 'unique', 0, 0);
                         $ubn_reports[$callsign] .= $this->formatQsoLine($q) . " - Unique\n";
                         $unique_count++;
                     } else {
-                        // Valid because it is recorded by >= 3 participants
+                        // Dianggap Valid karena stasiun lawan dicatat oleh >= 3 partisipan
                         $this->updateQsoStatus($q['id'], 'valid', 0, 0);
                         $ubn_reports[$callsign] .= $this->formatQsoLine($q) . " - valid QSO\n";
                         $valid_count++;
@@ -97,15 +97,15 @@ class CrossChecker {
                 }
             }
             
-            // Now that all statuses are marked, fetch ONLY VALID QSOs
+            // Setelah semua status berhasil ditandai, ambil HANYA QSO YANG VALID
             $valid_stmt = $this->pdo->prepare("SELECT * FROM qsos WHERE participant_id = ? AND status = 'valid' ORDER BY qso_date, qso_time");
             $valid_stmt->execute([$p_id]);
             $valid_qsos = $valid_stmt->fetchAll(PDO::FETCH_ASSOC);
             
-            // Re-calculate points and multipliers using ScoringHelper
+            // Kalkulasi ulang poin dan multiplier menggunakan ScoringHelper
             $score_data = calculateScore($valid_qsos, $p['country'], $p['continent']);
             
-            // Update individual QSOs in DB with their calculated points and multipliers
+            // Perbarui data QSO individual di database dengan hasil perhitungan poin dan multiplier final
             $upd_qso = $this->pdo->prepare("UPDATE qsos SET points = ?, is_multiplier = ? WHERE id = ?");
             foreach ($valid_qsos as $vq) {
                 $upd_qso->execute([$vq['qso_points'], $vq['mult_count'], $vq['id']]);
@@ -117,11 +117,11 @@ class CrossChecker {
             
             $raw_qso = $valid_count + $unique_count + $dupe_count + $busted_count + $nil_count + $xqso_count;
 
-            // Update cabrillo_logs
+            // Perbarui tabel cabrillo_logs
             $upd = $this->pdo->prepare("UPDATE cabrillo_logs SET raw_score=?, total_qso=?, total_dupes=?, total_points=?, total_multiplier=?, status='adjudicated' WHERE participant_id=?");
             $upd->execute([$final_score, $raw_qso, $dupe_count, $total_points, $total_mults, $p_id]);
 
-            // Save UBN
+            // Simpan file UBN
             $ubn_reports[$callsign] .= "\nSUMMARY\n-------\n";
             $ubn_reports[$callsign] .= "VALID QSOs: $valid_count\n";
             $ubn_reports[$callsign] .= "UNIQUE QSOs: $unique_count\n";
@@ -160,7 +160,7 @@ class CrossChecker {
             $diff = abs($my_time - $their_time);
             $their_band = getBandFromFreq($m['freq']);
             
-            // 30 minutes = 1800 seconds tolerance
+            // Toleransi waktu 30 menit = 1800 detik
             if ($my_band === $their_band && $my_qso['mode'] === $m['mode'] && $diff <= 1800) {
                 if ($diff < $closest_diff) {
                     $closest_diff = $diff;
@@ -170,7 +170,7 @@ class CrossChecker {
         }
         
         if (!$best_match) {
-            return ['status' => 'NIL']; // Band, Mode, or Time mismatch > 30 mins
+            return ['status' => 'NIL']; // Terdapat perbedaan Band, Mode, atau selisih Waktu > 30 menit
         }
         
         if ($my_qso['rcvd_exch'] == $best_match['sent_exch']) {

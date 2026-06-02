@@ -6,7 +6,7 @@ class Mailer {
     public static function sendPin($email, $callsign, $pin) {
         global $pdo;
 
-        // Fetch SMTP config
+        // Ambil konfigurasi SMTP dari database
         $stmt = $pdo->query("SELECT * FROM smtp_config LIMIT 1");
         $config = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -17,10 +17,10 @@ class Mailer {
         $body .= "Please keep this PIN safe. You will need it to view your detailed score or to re-submit your log.\n\n";
         $body .= "73,\nYB DX Contest Committee";
 
-        // If PHPMailer is available (e.g., user installed via composer)
+        // Jika PHPMailer tersedia (misalnya pengguna menginstal melalui composer)
         if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
             require_once __DIR__ . '/../vendor/autoload.php';
-            // Assuming PHPMailer is installed:
+            // Asumsi PHPMailer telah terinstal:
             /*
             $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
             try {
@@ -44,7 +44,7 @@ class Mailer {
             */
         }
         
-        // Mock sending for development environment
+        // Simulasi pengiriman email untuk lingkungan pengembangan (Development)
         $mock_log = __DIR__ . '/../mail_mock.log';
         $log_entry = "--- EMAIL TO: $email ($callsign) ---\nSUBJECT: $subject\nBODY:\n$body\n\n";
         file_put_contents($mock_log, $log_entry, FILE_APPEND);
