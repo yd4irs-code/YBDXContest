@@ -51,10 +51,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $parser->parse();
         
         // Update headers from POST
-        $required_headers = ['CALLSIGN', 'CATEGORY-OPERATOR', 'CATEGORY-BAND', 'CATEGORY-POWER', 'CATEGORY-MODE', 'EMAIL'];
+        $required_headers = ['CALLSIGN', 'CONTEST', 'CATEGORY-OPERATOR', 'CATEGORY-BAND', 'CATEGORY-POWER', 'CATEGORY-MODE', 'EMAIL', 'OPERATORS'];
         foreach ($required_headers as $req) {
             if (isset($_POST[$req]) && !empty(trim($_POST[$req]))) {
-                $parser->headers[$req] = strtoupper(trim($_POST[$req]));
+                $val = trim($_POST[$req]);
+                if ($req !== 'EMAIL') $val = strtoupper($val);
+                $parser->headers[$req] = $val;
             }
         }
         
@@ -202,16 +204,52 @@ if ($step === 2 && !empty($temp_file)) {
     $parser = new CabrilloParser($temp_file, date('Y'));
     $parser->parse();
     
-    // Check if there are missing headers (especially from v2 to v3)
+    // Check if there are missing headers
     $missing_headers = [];
-    $required_headers = ['CALLSIGN', 'CATEGORY-OPERATOR', 'CATEGORY-BAND', 'CATEGORY-POWER', 'CATEGORY-MODE', 'EMAIL'];
+    $required_headers = ['CALLSIGN', 'CONTEST', 'CATEGORY-OPERATOR', 'CATEGORY-BAND', 'CATEGORY-POWER', 'CATEGORY-MODE', 'EMAIL', 'OPERATORS'];
+    
+    // Auto-fill logic
+    $auto_fixed = false;
+    
+    // 1. CATEGORY-MODE: Auto-fill if mode in QSOs is PH
+    if (empty($parser->headers['CATEGORY-MODE'])) {
+        $has_ph = false;
+        foreach ($parser->qsos as $q) {
+            if (isset($q['mode']) && $q['mode'] === 'PH') {
+                $has_ph = true; break;
+            }
+        }
+        if ($has_ph) {
+            $parser->headers['CATEGORY-MODE'] = 'SSB';
+            $auto_fixed = true;
+        }
+    }
+    
+    // 2. OPERATORS: Auto-fill if SINGLE-OP
+    if (isset($parser->headers['CATEGORY-OPERATOR']) && strtoupper($parser->headers['CATEGORY-OPERATOR']) === 'SINGLE-OP') {
+        if (empty($parser->headers['OPERATORS']) && !empty($parser->headers['CALLSIGN'])) {
+            $parser->headers['OPERATORS'] = $parser->headers['CALLSIGN'];
+            $auto_fixed = true;
+        }
+    }
+    
+    if ($auto_fixed) {
+        $new_content = $parser->generateV3Content();
+        file_put_contents($temp_file, $new_content);
+    }
+    
     foreach ($required_headers as $req) {
+        if ($req === 'OPERATORS') {
+            // Only require OPERATORS if MULTI-OP or if operator category is not yet known
+            if (isset($parser->headers['CATEGORY-OPERATOR']) && strtoupper($parser->headers['CATEGORY-OPERATOR']) === 'SINGLE-OP') continue;
+        }
+        
         if (!isset($parser->headers[$req]) || empty(trim($parser->headers[$req]))) {
             $missing_headers[] = $req;
         }
     }
     
-    if ($parser->is_v2 && count($missing_headers) > 0) {
+    if (count($missing_headers) > 0) {
         $step = '2_fix_headers';
     }
 }
@@ -243,17 +281,27 @@ if ($step === 2 && !empty($temp_file)) {
             <form method="post" style="margin-top: 1.5rem; max-width: 500px;">
                 <?php foreach ($missing_headers as $h): ?>
                     <div class="form-group">
-                        <label><?php echo $h; ?></label>
-                        <?php if ($h === 'CATEGORY-MODE'): ?>
+                        <?php if ($h === 'CONTEST'): ?>
+                            <label>CONTEST (Apakah benar ini log untuk YB DX Contest?)</label>
+                            <select name="CONTEST" required>
+                                <option value="">-- Pilih --</option>
+                                <option value="YB DX Contest">Ya, ini untuk YB DX Contest</option>
+                            </select>
+                        <?php elseif ($h === 'CATEGORY-MODE'): ?>
+                            <label>CATEGORY-MODE</label>
                             <input type="text" name="<?php echo $h; ?>" value="SSB" readonly style="background: rgba(255,255,255,0.1);">
                         <?php elseif ($h === 'CATEGORY-OPERATOR'): ?>
+                            <label>CATEGORY-OPERATOR</label>
                             <select name="<?php echo $h; ?>" required>
+                                <option value="">-- Pilih --</option>
                                 <option value="SINGLE-OP">SINGLE-OP</option>
                                 <option value="MULTI-OP">MULTI-OP</option>
                                 <option value="CHECKLOG">CHECKLOG</option>
                             </select>
                         <?php elseif ($h === 'CATEGORY-BAND'): ?>
+                            <label>CATEGORY-BAND</label>
                             <select name="<?php echo $h; ?>" required>
+                                <option value="">-- Pilih --</option>
                                 <option value="ALL">ALL</option>
                                 <option value="80M">80M</option>
                                 <option value="40M">40M</option>
@@ -262,12 +310,24 @@ if ($step === 2 && !empty($temp_file)) {
                                 <option value="10M">10M</option>
                             </select>
                         <?php elseif ($h === 'CATEGORY-POWER'): ?>
+                            <label>CATEGORY-POWER</label>
                             <select name="<?php echo $h; ?>" required>
+                                <option value="">-- Pilih --</option>
                                 <option value="HIGH">HIGH</option>
                                 <option value="LOW">LOW</option>
                                 <option value="QRP">QRP</option>
                             </select>
+                        <?php elseif ($h === 'CALLSIGN'): ?>
+                            <label>CALLSIGN (Log ini milik siapa?)</label>
+                            <input type="text" name="CALLSIGN" pattern="[a-zA-Z0-9/]+" title="Gunakan callsign radio amatir yang valid" style="text-transform: uppercase;" required>
+                        <?php elseif ($h === 'OPERATORS'): ?>
+                            <label>OPERATORS (Sebutkan minimal 2 callsign untuk MULTI-OP)</label>
+                            <input type="text" name="OPERATORS" placeholder="Misal: YB1AR, YC2VOC" style="text-transform: uppercase;" required>
+                        <?php elseif ($h === 'EMAIL'): ?>
+                            <label>EMAIL (Alamat email Anda)</label>
+                            <input type="email" name="EMAIL" placeholder="Misal: user@example.com" required>
                         <?php else: ?>
+                            <label><?php echo $h; ?></label>
                             <input type="text" name="<?php echo $h; ?>" required>
                         <?php endif; ?>
                     </div>
