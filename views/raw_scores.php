@@ -160,7 +160,7 @@ if (!$participant_detail) {
                                 ?>
                             </td>
                             <td style="text-align: center; font-weight: bold;"><?php echo (isset($q['qso_points']) && $q['status'] !== 'xqso') ? $q['qso_points'] : 0; ?></td>
-                            <td style="text-align: center; font-weight: bold; color: var(--accent-hover);"><?php echo (isset($q['is_mult']) && $q['is_mult'] && $q['status'] !== 'xqso') ? '1' : ''; ?></td>
+                            <td style="text-align: center; font-weight: bold; color: var(--accent-hover);"><?php echo (isset($q['mult_count']) && $q['mult_count'] > 0 && $q['status'] !== 'xqso') ? $q['mult_count'] : ((isset($q['is_mult']) && $q['is_mult'] && $q['status'] !== 'xqso') ? '1' : ''); ?></td>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>

@@ -63,6 +63,7 @@ function calculateScore(&$qsos, $my_country, $my_continent) {
     foreach ($qsos as &$q) {
         $q['qso_points'] = 0;
         $q['is_mult'] = false;
+        $q['mult_count'] = 0;
         
         if (isset($q['status']) && $q['status'] === 'xqso') continue;
         if (isset($q['is_xqso']) && $q['is_xqso']) continue;
@@ -72,6 +73,7 @@ function calculateScore(&$qsos, $my_country, $my_continent) {
         $band = getBandFromFreq(isset($q['freq']) ? $q['freq'] : '0');
         
         $is_mult = false;
+        $mult_count = 0;
         $pts = 0;
         
         // Extract WPX prefix
@@ -93,11 +95,13 @@ function calculateScore(&$qsos, $my_country, $my_continent) {
                 if (!isset($worked_dxcc[$band][$dxcc['country']])) {
                     $worked_dxcc[$band][$dxcc['country']] = true;
                     $is_mult = true;
+                    $mult_count++;
                 }
             }
             if (!isset($worked_prefixes[$band][$prefix])) {
                 $worked_prefixes[$band][$prefix] = true;
                 $is_mult = true;
+                $mult_count++;
             }
             
         } else {
@@ -108,6 +112,7 @@ function calculateScore(&$qsos, $my_country, $my_continent) {
                 if (!isset($worked_prefixes[$band][$prefix])) {
                     $worked_prefixes[$band][$prefix] = true;
                     $is_mult = true;
+                    $mult_count++;
                 }
             } elseif ($dxcc['continent'] === $my_continent) {
                 if ($dxcc['country'] === $my_country) {
@@ -124,6 +129,7 @@ function calculateScore(&$qsos, $my_country, $my_continent) {
                 if (!isset($worked_dxcc[$band][$dxcc['country']])) {
                     $worked_dxcc[$band][$dxcc['country']] = true;
                     $is_mult = true;
+                    $mult_count++;
                 }
             }
         }
@@ -136,6 +142,7 @@ function calculateScore(&$qsos, $my_country, $my_continent) {
         
         $q['qso_points'] = $pts;
         $q['is_mult'] = $is_mult;
+        $q['mult_count'] = $mult_count;
     }
     
     // Sum up multipliers
