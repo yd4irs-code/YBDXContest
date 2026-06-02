@@ -154,13 +154,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 $soapbox = isset($parser->headers['SOAPBOX']) ? $parser->headers['SOAPBOX'] : '';
                 
+                require_once __DIR__ . '/../includes/ScoringHelper.php';
+                $score_data = calculateScore($parser->qsos, $country, $continent);
                 $raw_qso = 0;
                 foreach ($parser->qsos as $q) {
                     if (!$q['is_xqso']) $raw_qso++;
                 }
                 
-                $stmt = $pdo->prepare("INSERT INTO cabrillo_logs (participant_id, file_path, soapbox, total_qso) VALUES (?, ?, ?, ?)");
-                $stmt->execute([$p_id, $final_file, $soapbox, $raw_qso]);
+                $stmt = $pdo->prepare("INSERT INTO cabrillo_logs (participant_id, file_path, soapbox, total_qso, raw_score) VALUES (?, ?, ?, ?, ?)");
+                $stmt->execute([$p_id, $final_file, $soapbox, $raw_qso, $score_data['raw_score']]);
                 
                 // Save QSOs to DB for Adjudication
                 $stmt = $pdo->prepare("INSERT INTO qsos (participant_id, freq, mode, qso_date, qso_time, sent_call, sent_rst, sent_exch, rcvd_call, rcvd_rst, rcvd_exch, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");

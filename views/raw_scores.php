@@ -1,6 +1,7 @@
 <?php
 // views/raw_scores.php
 require_once __DIR__ . '/../config.php';
+require_once __DIR__ . '/../includes/ScoringHelper.php';
 global $pdo;
 
 $pin_error = '';
@@ -88,8 +89,37 @@ if (!$participant_detail) {
         <div class="glass-container">
             <h2>Detailed Score for <?php echo htmlspecialchars($participant_detail['callsign']); ?></h2>
             <p><strong>Category:</strong> <?php echo $participant_detail['category_op']; ?> / <?php echo $participant_detail['category_band']; ?> / <?php echo $participant_detail['category_power']; ?></p>
-            <p><strong>Current Raw Score:</strong> <?php echo number_format($participant_detail['raw_score']); ?></p>
-            <p><strong>Status:</strong> <?php echo strtoupper($participant_detail['adjudication_status']); ?></p>
+            
+            <?php 
+                $my_country = $participant_detail['country'] ?: 'UNKNOWN';
+                $my_continent = $participant_detail['continent'] ?: 'UNKNOWN';
+                $score_data = calculateScore($qso_details, $my_country, $my_continent); 
+            ?>
+            
+            <div style="display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 1.5rem; margin-bottom: 2rem;">
+                <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; flex: 1; min-width: 120px;">
+                    <div style="font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase;">Points</div>
+                    <div style="font-size: 1.5rem; font-weight: bold; color: #fff;"><?php echo number_format($score_data['points']); ?></div>
+                </div>
+                <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; flex: 1; min-width: 120px;">
+                    <div style="font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase;">Multipliers</div>
+                    <div style="font-size: 1.5rem; font-weight: bold; color: #fff;"><?php echo number_format($score_data['multiplier']); ?></div>
+                </div>
+                <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; flex: 1; min-width: 120px;">
+                    <div style="font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase;">Continents Worked</div>
+                    <div style="font-size: 1.5rem; font-weight: bold; color: #fff;"><?php echo number_format($score_data['continent_count']); ?></div>
+                </div>
+                <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; flex: 1; min-width: 120px;">
+                    <div style="font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase;">Countries / DXCC</div>
+                    <div style="font-size: 1.5rem; font-weight: bold; color: #fff;"><?php echo number_format($score_data['dxcc_count']); ?></div>
+                </div>
+                <div style="background: rgba(16, 185, 129, 0.1); padding: 1rem; border-radius: 8px; flex: 2; min-width: 200px; border: 1px solid rgba(16, 185, 129, 0.3);">
+                    <div style="font-size: 0.9rem; color: var(--success); text-transform: uppercase; font-weight: 600;">Calculated Raw Score</div>
+                    <div style="font-size: 2rem; font-weight: bold; color: var(--success);"><?php echo number_format($score_data['raw_score']); ?></div>
+                </div>
+            </div>
+            
+            <p style="margin-bottom: 2rem;"><strong>Adjudication Status:</strong> <?php echo strtoupper($participant_detail['adjudication_status']); ?></p>
             
             <h3 style="margin-top: 2rem; margin-bottom: 1rem;">QSO Details</h3>
             <div class="table-responsive">
