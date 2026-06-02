@@ -68,6 +68,7 @@ function t($key) {
             'club_scores' => 'Klasemen Klub',
             'soapbox' => 'Komentar Peserta',
             'statistics' => 'Statistik',
+            'all_time_high' => 'Rekor Sepanjang Masa',
             'committee' => 'Pengurus',
             'admin_login' => 'Masuk Manajer',
             'language' => 'Bahasa'
@@ -81,6 +82,7 @@ function t($key) {
             'club_scores' => 'Club Competition',
             'soapbox' => 'Soapbox',
             'statistics' => 'Statistics',
+            'all_time_high' => 'All Time High',
             'committee' => 'Committee',
             'admin_login' => 'Manager Login',
             'language' => 'Language'

@@ -12,6 +12,9 @@ require_once __DIR__ . '/../config.php';
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <!-- Main Stylesheet -->
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
@@ -32,6 +35,7 @@ require_once __DIR__ . '/../config.php';
             <a href="index.php?page=club_scores"><?php echo t('club_scores'); ?></a>
             <a href="index.php?page=soapbox"><?php echo t('soapbox'); ?></a>
             <a href="index.php?page=statistics"><?php echo t('statistics'); ?></a>
+            <a href="index.php?page=all_time_high"><?php echo t('all_time_high'); ?></a>
             <a href="index.php?page=committee"><?php echo t('committee'); ?></a>
             <a href="index.php?page=certificate_download" style="color: gold;"><i class="fas fa-award"></i> Certificate</a>
             

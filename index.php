@@ -12,6 +12,7 @@ $allowed_pages = [
     'club_scores', 
     'soapbox', 
     'statistics', 
+    'all_time_high',
     'committee',
     'certificate_download'
 ];

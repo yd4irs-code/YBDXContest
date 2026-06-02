@@ -37,12 +37,27 @@ $end_timestamp = $end->getTimestamp();
             <div class="countdown-item"><span id="cd-s">00</span><label>Seconds</label></div>
         </div>
         <p>Schedule: <?php echo $start->format('Y-m-d H:i'); ?> UTC - <?php echo $end->format('Y-m-d H:i'); ?> UTC</p>
-    <?php else: ?>
+<?php else: ?>
         <h2 style="color: var(--danger); margin-top: 2rem;">CONTEST HAS ENDED</h2>
         <p style="margin-top: 1rem;">Thank you to all participants. Please submit your Cabrillo logs!</p>
         <div style="margin-top: 2rem;">
             <a href="index.php?page=submit_log" class="btn" style="font-size: 1.2rem; padding: 1rem 2rem;">Submit Log Now</a>
         </div>
+        
+        <h3 style="margin-top: 3rem; color: var(--accent-hover);">Next Contest Starts In</h3>
+        <?php 
+            $next_year_schedule = getContestDate($current_contest_year + 1);
+            $next_start = new DateTime($next_year_schedule['start'], new DateTimeZone('UTC'));
+            $next_end = new DateTime($next_year_schedule['end'], new DateTimeZone('UTC'));
+            $next_start_timestamp = $next_start->getTimestamp();
+        ?>
+        <div id="countdown">
+            <div class="countdown-item"><span id="cd-d">00</span><label>Days</label></div>
+            <div class="countdown-item"><span id="cd-h">00</span><label>Hours</label></div>
+            <div class="countdown-item"><span id="cd-m">00</span><label>Minutes</label></div>
+            <div class="countdown-item"><span id="cd-s">00</span><label>Seconds</label></div>
+        </div>
+        <p>Schedule: <?php echo $next_start->format('Y-m-d H:i'); ?> UTC - <?php echo $next_end->format('Y-m-d H:i'); ?> UTC</p>
     <?php endif; ?>
 </div>
 
@@ -90,6 +105,8 @@ if (status === 'active') {
     targetTime = <?php echo $end_timestamp; ?> * 1000;
 } else if (status === 'upcoming') {
     targetTime = <?php echo $start_timestamp; ?> * 1000;
+} else if (status === 'ended') {
+    targetTime = <?php echo isset($next_start_timestamp) ? $next_start_timestamp : 0; ?> * 1000;
 }
 
 if (targetTime > 0) {

@@ -1,3 +1,5 @@
+--- ENGLISH VERSION ---
+
                     GNU GENERAL PUBLIC LICENSE
                        Version 3, 29 June 2007
 
@@ -48,3 +50,57 @@ the "copyright" line and a pointer to where the full notice is found.
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+
+--- VERSI INDONESIA ---
+
+                    LISENSI PUBLIK UMUM GNU
+                       Versi 3, 29 Juni 2007
+
+ Hak Cipta (C) 2026 Robby Sandes - YB4HQ
+ Setiap orang diizinkan untuk menyalin dan mendistribusikan salinan sama persis
+ dari dokumen lisensi ini, tetapi tidak diperkenankan mengubahnya.
+
+                            Mukadimah
+
+  Lisensi Publik Umum GNU adalah lisensi gratis dan copyleft untuk
+perangkat lunak dan jenis karya lainnya.
+
+  Lisensi untuk sebagian besar perangkat lunak dan karya praktis lainnya dirancang
+untuk mencabut kebebasan Anda untuk berbagi dan mengubah karya tersebut.  Sebaliknya,
+Lisensi Publik Umum GNU bertujuan untuk menjamin kebebasan Anda untuk
+berbagi dan mengubah semua versi program--untuk memastikan program tersebut tetap menjadi
+perangkat lunak bebas bagi semua penggunanya.  Kami, Free Software Foundation, menggunakan
+Lisensi Publik Umum GNU untuk sebagian besar perangkat lunak kami; ini juga berlaku untuk
+karya lain apa pun yang dirilis dengan cara ini oleh penulisnya.  Anda dapat menerapkannya pada
+program Anda juga.
+
+  [...Teks lengkap GNU GPLv3 dapat ditemukan di https://www.gnu.org/licenses/gpl-3.0.html...]
+
+======================================================================
+CARA MENERAPKAN KETENTUAN INI PADA PROGRAM BARU ANDA
+
+  Jika Anda mengembangkan program baru, dan Anda ingin program tersebut memberikan
+manfaat sebesar-besarnya bagi publik, cara terbaik untuk mencapainya adalah dengan menjadikannya
+perangkat lunak bebas yang dapat didistribusikan ulang dan diubah oleh siapa saja berdasarkan ketentuan ini.
+
+  Untuk melakukannya, lampirkan pemberitahuan berikut ke program.  Paling aman
+untuk melampirkannya di awal setiap file sumber untuk secara efektif
+menyatakan pengecualian garansi; dan setiap file setidaknya harus memiliki
+baris "hak cipta" dan penunjuk ke tempat pemberitahuan lengkap ditemukan.
+
+    <satu baris untuk memberikan nama program dan ide singkat tentang apa yang dilakukannya.>
+    Hak Cipta (C) 2026 Robby Sandes - YB4HQ
+
+    Program ini adalah perangkat lunak bebas: Anda dapat meredistribusikannya dan/atau memodifikasinya
+    di bawah syarat dan ketentuan dari GNU General Public License yang diterbitkan oleh
+    Free Software Foundation, baik versi 3 dari Lisensi, atau
+    (sesuai pilihan Anda) versi yang lebih baru.
+
+    Program ini didistribusikan dengan harapan akan berguna,
+    tetapi TANPA GARANSI APA PUN; bahkan tanpa garansi tersirat dari
+    KELAYAKAN JUAL atau KESESUAIAN UNTUK TUJUAN TERTENTU.  Lihat
+    GNU General Public License untuk detail lebih lanjut.
+
+    Anda seharusnya telah menerima salinan GNU General Public License
+    bersama dengan program ini.  Jika tidak, lihat <https://www.gnu.org/licenses/>.
