@@ -81,30 +81,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $country_header = isset($parser->headers['ADDRESS-COUNTRY']) ? strtoupper($parser->headers['ADDRESS-COUNTRY']) : '';
         
         $country = $country_header;
-        $continent = '';
+        require_once __DIR__ . '/../includes/ScoringHelper.php';
+        $dxcc_info = getDxccFromCallsign($callsign);
+        $country = $dxcc_info['country'];
+        $continent = $dxcc_info['continent'];
         
-        // Simple heuristic for DXCC
-        if (preg_match('/^(YB|YC|YD|YE|YF|YG|YH)/', $callsign)) {
-            $country = 'INDONESIA'; $continent = 'OC';
-        } elseif (preg_match('/^(K|W|N|A[A-K])/', $callsign) || strpos($country, 'UNITED STATES') !== false || strpos($country, 'USA') !== false) {
-            $country = 'UNITED STATES'; $continent = 'NA';
-        } elseif (preg_match('/^(V[A-G]|X[J-O])/', $callsign) || strpos($country, 'CANADA') !== false) {
-            $country = 'CANADA'; $continent = 'NA';
-        } elseif (preg_match('/^(J[A-S])/', $callsign) || strpos($country, 'JAPAN') !== false) {
-            $country = 'JAPAN'; $continent = 'AS';
-        } elseif (preg_match('/^(R|U[A-I])/', $callsign) || strpos($country, 'RUSSIA') !== false) {
-            $country = 'RUSSIA'; $continent = 'EU';
-        } else {
-            if (in_array($country, ['UNITED STATES', 'CANADA', 'MEXICO'])) $continent = 'NA';
-            elseif (in_array($country, ['INDONESIA', 'AUSTRALIA', 'NEW ZEALAND', 'PHILIPPINES'])) $continent = 'OC';
-            elseif (in_array($country, ['JAPAN', 'CHINA', 'INDIA', 'MALAYSIA'])) $continent = 'AS';
-            elseif (in_array($country, ['RUSSIA', 'SPAIN', 'GERMANY', 'ITALY', 'FRANCE', 'UK', 'ENGLAND', 'ROMANIA', 'BULGARIA'])) $continent = 'EU';
-            elseif (in_array($country, ['BRAZIL', 'ARGENTINA', 'CHILE', 'COLOMBIA'])) $continent = 'SA';
-            elseif (in_array($country, ['SOUTH AFRICA', 'EGYPT', 'MOROCCO'])) $continent = 'AF';
-            
-            if (empty($country)) $country = 'UNKNOWN-COUNTRY';
-            if (empty($continent)) $continent = 'UNKNOWN-CONT';
-        }
+        // If the parsed DXCC is not precise enough but the user supplied a recognizable country, we could theoretically use it, but relying on DXCC DB is much better.
+        // The user specifically requested to strictly use dxcc.json for this.
         
         global $pdo;
         

@@ -2,60 +2,29 @@
 // includes/ScoringHelper.php
 
 function getDxccFromCallsign($callsign) {
+    static $dxcc_data = null;
+    if ($dxcc_data === null) {
+        $json_file = __DIR__ . '/../ham-stuff/dxcc.json';
+        if (file_exists($json_file)) {
+            $dxcc_data = json_decode(file_get_contents($json_file), true);
+        } else {
+            $dxcc_data = ['dxcc' => []];
+        }
+    }
+    
     $callsign = strtoupper(trim($callsign));
     
-    // YB prefixes
-    if (preg_match('/^(YB|YC|YD|YE|YF|YG|YH|7[A-I]|8[A-I])/', $callsign)) {
-        return ['country' => 'INDONESIA', 'continent' => 'OC'];
+    if (isset($dxcc_data['dxcc'])) {
+        foreach ($dxcc_data['dxcc'] as $entity) {
+            if (!empty($entity['deleted']) && $entity['deleted']) continue;
+            if (empty($entity['prefixRegex'])) continue;
+            
+            $regex = '#' . $entity['prefixRegex'] . '#i';
+            if (preg_match($regex, $callsign)) {
+                return ['country' => strtoupper($entity['name']), 'continent' => $entity['continent'][0]];
+            }
+        }
     }
-    // USA
-    if (preg_match('/^(K|W|N|A[A-K])/', $callsign)) {
-        return ['country' => 'UNITED STATES', 'continent' => 'NA'];
-    }
-    // Canada
-    if (preg_match('/^(V[A-G]|X[J-O]|C[F-K])/', $callsign)) {
-        return ['country' => 'CANADA', 'continent' => 'NA'];
-    }
-    // Japan
-    if (preg_match('/^(J[A-S]|7[J-N]|8[J-N])/', $callsign)) {
-        return ['country' => 'JAPAN', 'continent' => 'AS'];
-    }
-    // European Russia
-    if (preg_match('/^(R|U[A-I])/', $callsign)) {
-        return ['country' => 'RUSSIA', 'continent' => 'EU'];
-    }
-    // Asiatic Russia
-    if (preg_match('/^(U[A-I]9|U[A-I]0|R9|R0)/', $callsign)) {
-        return ['country' => 'ASIATIC RUSSIA', 'continent' => 'AS'];
-    }
-    // Spain
-    if (preg_match('/^(EA|EB|EC|ED|EE|EF|EG|EH|AM|AN|AO)/', $callsign)) {
-        return ['country' => 'SPAIN', 'continent' => 'EU'];
-    }
-    // Germany
-    if (preg_match('/^(D[A-R])/', $callsign)) {
-        return ['country' => 'GERMANY', 'continent' => 'EU'];
-    }
-    // Italy
-    if (preg_match('/^(I)/', $callsign)) {
-        return ['country' => 'ITALY', 'continent' => 'EU'];
-    }
-    // UK
-    if (preg_match('/^(G|M|2)/', $callsign)) {
-        return ['country' => 'UNITED KINGDOM', 'continent' => 'EU'];
-    }
-    // France
-    if (preg_match('/^(F|TM)/', $callsign)) {
-        return ['country' => 'FRANCE', 'continent' => 'EU'];
-    }
-    
-    // Default fallback based on first character
-    $first_char = substr($callsign, 0, 1);
-    if (in_array($first_char, ['E', 'F', 'G', 'I', 'M', 'O', 'S', 'T'])) return ['country' => 'UNKNOWN-EU', 'continent' => 'EU'];
-    if (in_array($first_char, ['A', 'B', 'H', 'J', 'V', 'X'])) return ['country' => 'UNKNOWN-AS', 'continent' => 'AS'];
-    if (in_array($first_char, ['C', 'L', 'P', 'Y'])) return ['country' => 'UNKNOWN-SA', 'continent' => 'SA'];
-    if (in_array($first_char, ['5', '6', 'D'])) return ['country' => 'UNKNOWN-AF', 'continent' => 'AF'];
-    if (in_array($first_char, ['Z'])) return ['country' => 'UNKNOWN-OC', 'continent' => 'OC'];
     
     return ['country' => 'UNKNOWN', 'continent' => 'UNKNOWN'];
 }
