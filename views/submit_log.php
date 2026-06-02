@@ -76,6 +76,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $cat_band = isset($parser->headers['CATEGORY-BAND']) ? strtoupper($parser->headers['CATEGORY-BAND']) : '';
         $cat_power = isset($parser->headers['CATEGORY-POWER']) ? strtoupper($parser->headers['CATEGORY-POWER']) : '';
         $club = isset($parser->headers['CLUB']) ? $parser->headers['CLUB'] : '';
+        $country_header = isset($parser->headers['ADDRESS-COUNTRY']) ? strtoupper($parser->headers['ADDRESS-COUNTRY']) : '';
+        
+        $country = $country_header;
+        $continent = '';
+        
+        // Simple heuristic for DXCC
+        if (preg_match('/^(YB|YC|YD|YE|YF|YG|YH)/', $callsign)) {
+            $country = 'INDONESIA'; $continent = 'OC';
+        } elseif (preg_match('/^(K|W|N|A[A-K])/', $callsign) || strpos($country, 'UNITED STATES') !== false || strpos($country, 'USA') !== false) {
+            $country = 'UNITED STATES'; $continent = 'NA';
+        } elseif (preg_match('/^(V[A-G]|X[J-O])/', $callsign) || strpos($country, 'CANADA') !== false) {
+            $country = 'CANADA'; $continent = 'NA';
+        } elseif (preg_match('/^(J[A-S])/', $callsign) || strpos($country, 'JAPAN') !== false) {
+            $country = 'JAPAN'; $continent = 'AS';
+        } elseif (preg_match('/^(R|U[A-I])/', $callsign) || strpos($country, 'RUSSIA') !== false) {
+            $country = 'RUSSIA'; $continent = 'EU';
+        } else {
+            if (in_array($country, ['UNITED STATES', 'CANADA', 'MEXICO'])) $continent = 'NA';
+            elseif (in_array($country, ['INDONESIA', 'AUSTRALIA', 'NEW ZEALAND', 'PHILIPPINES'])) $continent = 'OC';
+            elseif (in_array($country, ['JAPAN', 'CHINA', 'INDIA', 'MALAYSIA'])) $continent = 'AS';
+            elseif (in_array($country, ['RUSSIA', 'SPAIN', 'GERMANY', 'ITALY', 'FRANCE', 'UK', 'ENGLAND', 'ROMANIA', 'BULGARIA'])) $continent = 'EU';
+            elseif (in_array($country, ['BRAZIL', 'ARGENTINA', 'CHILE', 'COLOMBIA'])) $continent = 'SA';
+            elseif (in_array($country, ['SOUTH AFRICA', 'EGYPT', 'MOROCCO'])) $continent = 'AF';
+            
+            if (empty($country)) $country = 'UNKNOWN-COUNTRY';
+            if (empty($continent)) $continent = 'UNKNOWN-CONT';
+        }
         
         global $pdo;
         
@@ -103,8 +130,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $p_id = $participant['id'];
                     $pin = $participant['access_code']; // keep old pin
                     // Update
-                    $stmt = $pdo->prepare("UPDATE participants SET email=?, category_op=?, category_band=?, category_power=?, club_name=? WHERE id=?");
-                    $stmt->execute([$email, $cat_op, $cat_band, $cat_power, $club, $p_id]);
+                    $stmt = $pdo->prepare("UPDATE participants SET email=?, category_op=?, category_band=?, category_power=?, club_name=?, continent=?, country=? WHERE id=?");
+                    $stmt->execute([$email, $cat_op, $cat_band, $cat_power, $club, $continent, $country, $p_id]);
                     // Delete old log
                     $pdo->prepare("DELETE FROM cabrillo_logs WHERE participant_id=?")->execute([$p_id]);
                     $pdo->prepare("DELETE FROM qsos WHERE participant_id=?")->execute([$p_id]);
@@ -112,8 +139,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 // Insert new
                 $pin = sprintf("%06d", mt_rand(1, 999999));
-                $stmt = $pdo->prepare("INSERT INTO participants (callsign, email, access_code, category_op, category_band, category_power, club_name, year) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-                $stmt->execute([$callsign, $email, $pin, $cat_op, $cat_band, $cat_power, $club, $current_contest_year]);
+                $stmt = $pdo->prepare("INSERT INTO participants (callsign, email, access_code, category_op, category_band, category_power, club_name, continent, country, year) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$callsign, $email, $pin, $cat_op, $cat_band, $cat_power, $club, $continent, $country, $current_contest_year]);
                 $p_id = $pdo->lastInsertId();
             }
             
@@ -127,8 +154,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 $soapbox = isset($parser->headers['SOAPBOX']) ? $parser->headers['SOAPBOX'] : '';
                 
-                $stmt = $pdo->prepare("INSERT INTO cabrillo_logs (participant_id, file_path, soapbox) VALUES (?, ?, ?)");
-                $stmt->execute([$p_id, $final_file, $soapbox]);
+                $raw_qso = 0;
+                foreach ($parser->qsos as $q) {
+                    if (!$q['is_xqso']) $raw_qso++;
+                }
+                
+                $stmt = $pdo->prepare("INSERT INTO cabrillo_logs (participant_id, file_path, soapbox, total_qso) VALUES (?, ?, ?, ?)");
+                $stmt->execute([$p_id, $final_file, $soapbox, $raw_qso]);
                 
                 // Save QSOs to DB for Adjudication
                 $stmt = $pdo->prepare("INSERT INTO qsos (participant_id, freq, mode, qso_date, qso_time, sent_call, sent_rst, sent_exch, rcvd_call, rcvd_rst, rcvd_exch, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
