@@ -29,11 +29,36 @@ function getDxccFromCallsign($callsign) {
     return ['country' => 'UNKNOWN', 'continent' => 'UNKNOWN'];
 }
 
+function getBandFromFreq($freq) {
+    if (!is_numeric($freq)) {
+        $f = strtoupper(trim($freq));
+        if (strpos($f, 'M') !== false) return $f;
+        return 'UNKNOWN';
+    }
+    $f = (int)$freq;
+    if ($f >= 1800 && $f <= 2000) return '160M';
+    if ($f >= 3500 && $f <= 4000) return '80M';
+    if ($f >= 7000 && $f <= 7300) return '40M';
+    if ($f >= 14000 && $f <= 14350) return '20M';
+    if ($f >= 21000 && $f <= 21450) return '15M';
+    if ($f >= 28000 && $f <= 29700) return '10M';
+    // Fallback if freq is exactly MHz edge
+    if ($f == 1800) return '160M';
+    if ($f == 3500) return '80M';
+    if ($f == 7000) return '40M';
+    if ($f == 14000) return '20M';
+    if ($f == 21000) return '15M';
+    if ($f == 28000) return '10M';
+    return 'UNKNOWN';
+}
+
 function calculateScore(&$qsos, $my_country, $my_continent) {
     $total_points = 0;
     $worked_dxcc = [];
     $worked_continents = [];
-    $yb_prefixes = [];
+    $worked_prefixes = [];
+    
+    $is_indonesian = ($my_country === 'INDONESIA');
     
     foreach ($qsos as &$q) {
         $q['qso_points'] = 0;
@@ -44,38 +69,67 @@ function calculateScore(&$qsos, $my_country, $my_continent) {
         
         $rcvd = isset($q['rcvd_call']) ? $q['rcvd_call'] : '';
         $dxcc = getDxccFromCallsign($rcvd);
+        $band = getBandFromFreq(isset($q['freq']) ? $q['freq'] : '0');
         
         $is_mult = false;
+        $pts = 0;
         
-        // Count DXCC and Continent
-        if ($dxcc['country'] !== 'UNKNOWN' && strpos($dxcc['country'], 'UNKNOWN-') === false) {
-            if (!isset($worked_dxcc[$dxcc['country']])) {
-                $worked_dxcc[$dxcc['country']] = true;
-                $is_mult = true;
+        // Extract WPX prefix
+        preg_match('/^([A-Z0-9]+[0-9])/', $rcvd, $matches);
+        $prefix = isset($matches[1]) ? $matches[1] : substr($rcvd, 0, 3);
+        
+        if ($is_indonesian) {
+            // Points for Indonesian stations
+            if ($dxcc['country'] === 'INDONESIA') {
+                $pts = 0;
+            } elseif ($dxcc['continent'] === $my_continent) {
+                $pts = 5;
+            } else {
+                $pts = 10;
             }
-        }
-        if ($dxcc['continent'] !== 'UNKNOWN') {
-            $worked_continents[$dxcc['continent']] = true;
-        }
-        
-        // Points Calculation
-        $pts = 1;
-        if ($dxcc['country'] === 'INDONESIA') {
-            $pts = 10;
-            // Track YB prefix (e.g. YB1, YC2, YD3) - extract prefix
-            preg_match('/^([A-Z0-9]+[0-9])/', $rcvd, $matches);
-            if (isset($matches[1])) {
-                if (!isset($yb_prefixes[$matches[1]])) {
-                    $yb_prefixes[$matches[1]] = true;
-                    $is_mult = true; // YB Prefix counts as a separate mult
+            
+            // Multipliers (per band) for Indonesian stations
+            if ($dxcc['country'] !== 'UNKNOWN' && strpos($dxcc['country'], 'UNKNOWN-') === false) {
+                if (!isset($worked_dxcc[$band][$dxcc['country']])) {
+                    $worked_dxcc[$band][$dxcc['country']] = true;
+                    $is_mult = true;
                 }
             }
-        } elseif ($dxcc['continent'] !== $my_continent) {
-            $pts = 3;
-        } elseif ($dxcc['country'] !== $my_country) {
-            $pts = 2;
+            if (!isset($worked_prefixes[$band][$prefix])) {
+                $worked_prefixes[$band][$prefix] = true;
+                $is_mult = true;
+            }
+            
         } else {
-            $pts = 1; // Same country
+            // Points for DX stations
+            if ($dxcc['country'] === 'INDONESIA') {
+                $pts = 10;
+                // Multipliers (YB Prefixes) for DX stations
+                if (!isset($worked_prefixes['ALL'][$prefix])) {
+                    $worked_prefixes['ALL'][$prefix] = true;
+                    $is_mult = true;
+                }
+            } elseif ($dxcc['continent'] !== $my_continent) {
+                $pts = 3;
+            } elseif ($dxcc['country'] !== $my_country) {
+                $pts = 2;
+            } else {
+                $pts = 1;
+            }
+            
+            // DXCC multiplier for DX (legacy logic)
+            if ($dxcc['country'] !== 'UNKNOWN' && strpos($dxcc['country'], 'UNKNOWN-') === false) {
+                if (!isset($worked_dxcc['ALL'][$dxcc['country']])) {
+                    $worked_dxcc['ALL'][$dxcc['country']] = true;
+                    if ($dxcc['country'] !== 'INDONESIA') {
+                        $is_mult = true;
+                    }
+                }
+            }
+        }
+        
+        if ($dxcc['continent'] !== 'UNKNOWN') {
+            $worked_continents[$dxcc['continent']] = true;
         }
         
         $total_points += $pts;
@@ -84,18 +138,27 @@ function calculateScore(&$qsos, $my_country, $my_continent) {
         $q['is_mult'] = $is_mult;
     }
     
-    $total_yb_prefixes = count($yb_prefixes);
-    $total_dxcc = count($worked_dxcc);
-    $total_multiplier = $total_yb_prefixes + $total_dxcc;
+    // Sum up multipliers
+    $total_dxcc = 0;
+    $total_prefixes = 0;
     
-    if ($total_multiplier == 0) $total_multiplier = 1; // Prevent zero multiplier
+    if ($is_indonesian) {
+        foreach ($worked_dxcc as $band => $countries) $total_dxcc += count($countries);
+        foreach ($worked_prefixes as $band => $pfxs) $total_prefixes += count($pfxs);
+    } else {
+        if (isset($worked_dxcc['ALL'])) $total_dxcc = count($worked_dxcc['ALL']);
+        if (isset($worked_prefixes['ALL'])) $total_prefixes = count($worked_prefixes['ALL']);
+    }
+    
+    $total_multiplier = $total_dxcc + $total_prefixes;
+    if ($total_multiplier == 0) $total_multiplier = 1; // Prevent zero
     
     $raw_score = $total_points * $total_multiplier;
     
     return [
         'points' => $total_points,
         'multiplier' => $total_multiplier,
-        'yb_prefixes' => $total_yb_prefixes,
+        'yb_prefixes' => $total_prefixes, 
         'dxcc_count' => $total_dxcc,
         'continent_count' => count($worked_continents),
         'raw_score' => $raw_score
