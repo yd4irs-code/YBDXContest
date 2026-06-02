@@ -126,22 +126,36 @@ if (!$participant_detail) {
                 <table>
                     <thead>
                         <tr>
-                            <th>Date/Time</th>
+                            <th style="width: 40px; text-align: center;">#</th>
+                            <th>Date</th>
+                            <th>Time</th>
                             <th>Freq</th>
                             <th>Mode</th>
-                            <th>Sent</th>
-                            <th>Rcvd</th>
+                            <th>Sent Call</th>
+                            <th>Sent RST</th>
+                            <th>Sent NR</th>
+                            <th>Rcvd Call</th>
+                            <th>Rcvd RST</th>
+                            <th>Rcvd NR</th>
                             <th>Status</th>
+                            <th style="text-align: center;">Points</th>
+                            <th style="text-align: center;">Mult</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach($qso_details as $q): ?>
+                        <?php $qso_idx = 1; foreach($qso_details as $q): ?>
                         <tr>
-                            <td><?php echo $q['qso_date'] . ' ' . $q['qso_time']; ?></td>
+                            <td style="text-align: center; color: var(--text-secondary);"><?php echo $qso_idx++; ?></td>
+                            <td><?php echo $q['qso_date']; ?></td>
+                            <td><?php echo substr($q['qso_time'], 0, 5); ?></td>
                             <td><?php echo htmlspecialchars($q['freq']); ?></td>
                             <td><?php echo htmlspecialchars($q['mode']); ?></td>
-                            <td><?php echo htmlspecialchars($q['sent_call'] . ' ' . $q['sent_rst'] . ' ' . $q['sent_exch']); ?></td>
-                            <td><?php echo htmlspecialchars($q['rcvd_call'] . ' ' . $q['rcvd_rst'] . ' ' . $q['rcvd_exch']); ?></td>
+                            <td><?php echo htmlspecialchars($q['sent_call']); ?></td>
+                            <td><?php echo htmlspecialchars($q['sent_rst']); ?></td>
+                            <td><?php echo htmlspecialchars($q['sent_exch']); ?></td>
+                            <td><?php echo htmlspecialchars($q['rcvd_call']); ?></td>
+                            <td><?php echo htmlspecialchars($q['rcvd_rst']); ?></td>
+                            <td><?php echo htmlspecialchars($q['rcvd_exch']); ?></td>
                             <td>
                                 <?php 
                                     if ($q['status'] === 'xqso') echo '<span class="badge badge-danger">X-QSO</span>';
@@ -149,6 +163,8 @@ if (!$participant_detail) {
                                     else echo '<span class="badge badge-warning">'.strtoupper($q['status']).'</span>';
                                 ?>
                             </td>
+                            <td style="text-align: center; font-weight: bold;"><?php echo (isset($q['qso_points']) && $q['status'] !== 'xqso') ? $q['qso_points'] : 0; ?></td>
+                            <td style="text-align: center; font-weight: bold; color: var(--accent-hover);"><?php echo (isset($q['is_mult']) && $q['is_mult'] && $q['status'] !== 'xqso') ? '1' : ''; ?></td>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
