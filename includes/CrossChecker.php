@@ -103,7 +103,7 @@ class CrossChecker {
             $valid_qsos = $valid_stmt->fetchAll(PDO::FETCH_ASSOC);
             
             // Ngitung ulang poin sama multiplier pake fungsi di ScoringHelper
-            $score_data = calculateScore($valid_qsos, $p['country'], $p['continent']);
+            $score_data = calculateScore($valid_qsos, $p['country'], $p['continent'], $p['category_band']);
             
             // Update data QSO-nya di database pake hasil hitungan yang baru
             $upd_qso = $this->pdo->prepare("UPDATE qsos SET points = ?, is_multiplier = ? WHERE id = ?");

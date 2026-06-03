@@ -13,7 +13,18 @@ if (isset($_GET['dq']) && isset($_GET['id'])) {
 
 if (isset($_GET['delete']) && isset($_GET['id'])) {
     $id = (int)$_GET['id'];
+    
+    // Hapus file log fisik agar bersih sepenuhnya
+    $stmt = $pdo->prepare("SELECT file_path FROM cabrillo_logs WHERE participant_id = ?");
+    $stmt->execute([$id]);
+    $log_file = $stmt->fetchColumn();
+    if ($log_file && file_exists($log_file)) {
+        unlink($log_file);
+    }
+    
+    // Hapus peserta (otomatis menghapus nilai di tabel cabrillo_logs dan qsos berkat ON DELETE CASCADE)
     $pdo->prepare("DELETE FROM participants WHERE id = ?")->execute([$id]);
+    
     header("Location: participants.php");
     exit;
 }

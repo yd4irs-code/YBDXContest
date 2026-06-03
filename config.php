@@ -4,7 +4,7 @@ session_start();
 
 // Nyambungin ke Database nih bosku
 $host = '127.0.0.1';
-$dbname = 'ybdxcontest';
+$dbname = 'c2contest';
 $user = 'root';
 $pass = '';
 

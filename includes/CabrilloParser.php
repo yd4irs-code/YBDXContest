@@ -104,7 +104,7 @@ class CabrilloParser {
                 'rcvd_call' => $rcvd_call,
                 'rcvd_rst' => $rcvd_rst,
                 'rcvd_exch' => $rcvd_exch,
-                'error_reasons' => []
+                'error_reasons' => $is_x_qso ? ["Pre-marked as X-QSO in the submitted file"] : []
             ];
             
             $this->qsos[] = $qso;
@@ -117,6 +117,14 @@ class CabrilloParser {
         foreach ($required_headers as $req) {
             if (!isset($this->headers[$req]) || empty($this->headers[$req])) {
                 $this->errors[] = "Missing required header: $req";
+            }
+        }
+
+        // 1.5. Validasi nilai CATEGORY-POWER
+        if (isset($this->headers['CATEGORY-POWER'])) {
+            $pwr = strtoupper(trim($this->headers['CATEGORY-POWER']));
+            if (!in_array($pwr, ['HIGH', 'LOW', 'QRP'])) {
+                $this->errors[] = "Invalid CATEGORY-POWER: {$this->headers['CATEGORY-POWER']}. Must be HIGH, LOW, or QRP.";
             }
         }
 
@@ -152,6 +160,12 @@ class CabrilloParser {
                 $qso['error_reasons'][] = "Sent callsign ({$qso['sent_call']}) does not match header CALLSIGN ($header_callsign)";
             }
 
+            // Anti-Cheat: Gak boleh nge-QSO sama diri sendiri (Self-QSO)
+            if ($qso['rcvd_call'] === $header_callsign || $qso['rcvd_call'] === $qso['sent_call']) {
+                $qso['is_xqso'] = true;
+                $qso['error_reasons'][] = "Self-QSO detected. Participant cannot log a QSO with themselves.";
+            }
+
             // Mode harus PH (Phone/SSB) yak
             if ($qso['mode'] !== 'PH') {
                 $qso['is_xqso'] = true;
@@ -178,7 +192,7 @@ class CabrilloParser {
         }
     }
 
-    public function generateV3Content() {
+    public function generateV3Content($finalize = false) {
         // Susun ulang struktur kontennya jadi format V3 yang rapi
         $content = ["START-OF-LOG: 3.0"];
         foreach ($this->headers as $k => $v) {
@@ -193,7 +207,11 @@ class CabrilloParser {
         }
         
         foreach ($this->qsos as $qso) {
-            $prefix = $qso['is_xqso'] ? 'X-QSO:' : 'QSO:';
+            if ($finalize) {
+                $prefix = $qso['is_xqso'] ? 'X-QSO:' : 'QSO:';
+            } else {
+                $prefix = (strpos(trim($qso['original_line']), 'X-QSO:') === 0) ? 'X-QSO:' : 'QSO:';
+            }
             // Rapihin spasinya biar enak dilihat pas dibuka di text editor
             $line = sprintf("%s %5s %2s %s %s %-10s %3s %-6s %-10s %3s %-6s",
                 $prefix,

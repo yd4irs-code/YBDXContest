@@ -134,20 +134,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $final_path = __DIR__ . '/../ValidQSO/' . $current_contest_year;
                 if (!is_dir($final_path)) mkdir($final_path, 0777, true);
                 $final_file = $final_path . '/' . $callsign . '.log';
-                $final_content = $parser->generateV3Content();
+                $final_content = $parser->generateV3Content(true);
                 file_put_contents($final_file, $final_content);
                 
                 $soapbox = isset($parser->headers['SOAPBOX']) ? $parser->headers['SOAPBOX'] : '';
                 
                 require_once __DIR__ . '/../includes/ScoringHelper.php';
-                $score_data = calculateScore($parser->qsos, $country, $continent);
+                $score_data = calculateScore($parser->qsos, $country, $continent, $cat_band);
                 $raw_qso = 0;
                 foreach ($parser->qsos as $q) {
                     if (!$q['is_xqso']) $raw_qso++;
                 }
                 
-                $stmt = $pdo->prepare("INSERT INTO cabrillo_logs (participant_id, file_path, soapbox, total_qso, raw_score) VALUES (?, ?, ?, ?, ?)");
-                $stmt->execute([$p_id, $final_file, $soapbox, $raw_qso, $score_data['raw_score']]);
+                $stmt = $pdo->prepare("INSERT INTO cabrillo_logs (participant_id, file_path, soapbox, total_qso, raw_score, total_points, total_multiplier) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$p_id, $final_file, $soapbox, $raw_qso, $score_data['raw_score'], $score_data['points'], $score_data['multiplier']]);
                 
                 // Save QSOs to DB for Adjudication
                 $stmt = $pdo->prepare("INSERT INTO qsos (participant_id, freq, mode, qso_date, qso_time, sent_call, sent_rst, sent_exch, rcvd_call, rcvd_rst, rcvd_exch, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
@@ -233,8 +233,17 @@ if ($step === 2 && !empty($temp_file)) {
             if (isset($parser->headers['CATEGORY-OPERATOR']) && strtoupper($parser->headers['CATEGORY-OPERATOR']) === 'SINGLE-OP') continue;
         }
         
-        if (!isset($parser->headers[$req]) || empty(trim($parser->headers[$req]))) {
+        $val = isset($parser->headers[$req]) ? strtoupper(trim($parser->headers[$req])) : '';
+        if (empty($val)) {
             $missing_headers[] = $req;
+        } else {
+            if ($req === 'CATEGORY-POWER' && !in_array($val, ['HIGH', 'LOW', 'QRP'])) {
+                $missing_headers[] = $req;
+            } elseif ($req === 'CATEGORY-BAND' && !in_array($val, ['ALL', '80M', '40M', '20M', '15M', '10M'])) {
+                $missing_headers[] = $req;
+            } elseif ($req === 'CATEGORY-OPERATOR' && !in_array($val, ['SINGLE-OP', 'MULTI-OP', 'CHECKLOG'])) {
+                $missing_headers[] = $req;
+            }
         }
     }
     
@@ -351,7 +360,13 @@ if ($step === 2 && !empty($temp_file)) {
             foreach ($parser->qsos as $i => $qso) {
                 if ($qso['is_xqso']) {
                     $xqso++;
-                    $xqso_details[] = "Line " . ($i + 1) . ": " . implode(", ", $qso['error_reasons']);
+                    $reasons = implode(", ", $qso['error_reasons']);
+                    if (empty(trim($reasons))) $reasons = "Unknown error (invalid format or incomplete QSO line)";
+                    $xqso_details[] = [
+                        'line_num' => $i + 1,
+                        'qso_line' => $qso['original_line'],
+                        'reasons' => $reasons
+                    ];
                 } else {
                     $valid_qso++;
                     
@@ -372,10 +387,11 @@ if ($step === 2 && !empty($temp_file)) {
             
             // Calculate actual score with correct DXCC info
             $callsign_for_calc = isset($parser->headers['CALLSIGN']) ? strtoupper($parser->headers['CALLSIGN']) : '';
+            $cat_band_calc = isset($parser->headers['CATEGORY-BAND']) ? strtoupper($parser->headers['CATEGORY-BAND']) : 'ALL';
             require_once __DIR__ . '/../includes/ScoringHelper.php';
             $dxcc_info_calc = getDxccFromCallsign($callsign_for_calc);
             
-            $score_data = calculateScore($parser->qsos, $dxcc_info_calc['country'], $dxcc_info_calc['continent']);
+            $score_data = calculateScore($parser->qsos, $dxcc_info_calc['country'], $dxcc_info_calc['continent'], $cat_band_calc);
             ksort($band_qsos); // Sort bands alphabetically/numerically
             ?>
             
@@ -439,7 +455,13 @@ if ($step === 2 && !empty($temp_file)) {
                 <div style="margin-bottom: 1.5rem;">
                     <h4 style="color: var(--warning);">QSO Error Details</h4>
                     <div style="background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 8px; max-height: 200px; overflow-y: auto; font-family: monospace; font-size: 0.85rem;">
-                        <?php foreach (array_slice($xqso_details, 0, 50) as $det) echo htmlspecialchars($det) . "<br>"; ?>
+                        <?php foreach (array_slice($xqso_details, 0, 50) as $det): ?>
+                            <div style="margin-bottom: 0.5rem;">
+                                <span style="color: var(--text-secondary);">Line <?php echo $det['line_num']; ?>:</span> 
+                                <?php echo htmlspecialchars($det['qso_line']); ?><br>
+                                <span style="color: var(--danger); margin-left: 1rem;">&#8627; <?php echo htmlspecialchars($det['reasons']); ?></span>
+                            </div>
+                        <?php endforeach; ?>
                         <?php if(count($xqso_details) > 50) echo "... and " . (count($xqso_details)-50) . " more."; ?>
                     </div>
                 </div>

@@ -119,7 +119,7 @@ function getBandFromFreq($freq) {
     return 'UNKNOWN';
 }
 
-function calculateScore(&$qsos, $my_country, $my_continent) {
+function calculateScore(&$qsos, $my_country, $my_continent, $cat_band = 'ALL') {
     $total_points = 0;
     $worked_dxcc = [];
     $worked_continents = [];
@@ -148,6 +148,14 @@ function calculateScore(&$qsos, $my_country, $my_continent) {
         $mult_count = 0;
         $pts = 0;
         
+        // Jika milih satu band tapi QSO di band lain, gak dapet poin/mult, tapi QSO tetap sah buat lawan
+        if (strtoupper($cat_band) !== 'ALL' && $band !== strtoupper($cat_band)) {
+            $q['qso_points'] = 0;
+            $q['is_mult'] = false;
+            $q['mult_count'] = 0;
+            continue;
+        }
+
         if ($is_indonesian) {
             // Poin khusus buat stasiun lokal Indonesia nih
             if ($dxcc['country'] === 'INDONESIA') {

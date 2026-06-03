@@ -10,10 +10,10 @@ try {
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     
     // Bikin DB baru kalo misalnya belum ada, sikat!
-    $pdo->exec("CREATE DATABASE IF NOT EXISTS ybdxcontest CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
-    $pdo->exec("USE ybdxcontest");
+    $pdo->exec("CREATE DATABASE IF NOT EXISTS c2contest CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+    $pdo->exec("USE c2contest");
     
-    echo "Mantap! Database 'ybdxcontest' udah kebuat/kepilih ya.\n";
+    echo "Mantap! Database 'c2contest' udah kebuat/kepilih ya.\n";
 
     // 1. Tabel users (Buat login Admin/Manajer nih)
     $pdo->exec("CREATE TABLE IF NOT EXISTS users (

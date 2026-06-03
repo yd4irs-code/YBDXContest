@@ -61,7 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_pin'])) {
 $grouped = [];
 if (!$participant_detail) {
     $stmt = $pdo->prepare("
-        SELECT p.*, c.raw_score, c.total_qso 
+        SELECT p.*, c.raw_score, c.total_qso, c.total_points, c.total_multiplier 
         FROM participants p
         JOIN cabrillo_logs c ON p.id = c.participant_id
         WHERE p.year = ? AND p.disqualified = 0
@@ -93,7 +93,7 @@ if (!$participant_detail) {
             <?php 
                 $my_country = $participant_detail['country'] ?: 'UNKNOWN';
                 $my_continent = $participant_detail['continent'] ?: 'UNKNOWN';
-                $score_data = calculateScore($qso_details, $my_country, $my_continent); 
+                $score_data = calculateScore($qso_details, $my_country, $my_continent, $participant_detail['category_band']); 
             ?>
             
             <div style="display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 1.5rem; margin-bottom: 2rem;">
@@ -205,76 +205,74 @@ if (!$participant_detail) {
             <?php else: ?>
             
                 <?php foreach($grouped as $op => $bands): ?>
-                    <details class="score-details level-1" open>
-                        <summary>
-                            <span class="summary-title">Operator: <?php echo htmlspecialchars($op); ?></span>
-                            <i class="fas fa-chevron-down summary-icon"></i>
-                        </summary>
-                        <div class="details-content">
-                            <?php foreach($bands as $band => $powers): ?>
-                                <details class="score-details level-2">
-                                    <summary>
-                                        <span class="summary-title">Band: <?php echo htmlspecialchars($band); ?></span>
-                                        <i class="fas fa-chevron-down summary-icon"></i>
-                                    </summary>
-                                    <div class="details-content">
-                                        <?php foreach($powers as $power => $conts): ?>
-                                            <details class="score-details level-3">
-                                                <summary>
-                                                    <span class="summary-title">Power: <span class="badge badge-warning" style="margin-left:0.5rem; margin-bottom:0; font-size:0.8rem;"><?php echo htmlspecialchars($power); ?></span></span>
-                                                    <i class="fas fa-chevron-down summary-icon"></i>
-                                                </summary>
-                                                <div class="details-content">
-                                                    <?php foreach($conts as $cont => $countries): ?>
-                                                        <details class="score-details level-4">
-                                                            <summary>
-                                                                <span class="summary-title">Continent: <?php echo htmlspecialchars($cont); ?></span>
-                                                                <i class="fas fa-chevron-down summary-icon"></i>
-                                                            </summary>
-                                                            <div class="details-content">
-                                                                <?php foreach($countries as $country => $participants): ?>
-                                                                    <h6 style="color: var(--text-secondary); margin-top: 1rem; margin-bottom: 0.5rem; font-size: 1.1rem; border-bottom: 1px dashed var(--glass-border); padding-bottom: 0.3rem;"><i class="fas fa-flag" style="margin-right: 0.5rem;"></i> <?php echo htmlspecialchars($country); ?></h6>
-                                                                    
-                                                                    <div class="table-responsive">
-                                                                        <table>
-                                                                            <thead>
-                                                                                <tr>
-                                                                                    <th style="width: 50px;">Rank</th>
-                                                                                    <th>Callsign</th>
-                                                                                    <th style="text-align: right;">QSO</th>
-                                                                                    <th style="text-align: right;">Raw Score</th>
-                                                                                </tr>
-                                                                            </thead>
-                                                                            <tbody>
-                                                                                <?php 
-                                                                                $rank = 1;
-                                                                                foreach($participants as $p): ?>
-                                                                                <tr>
-                                                                                    <td><?php echo $rank++; ?></td>
-                                                                                    <td style="font-weight: 600;">
-                                                                                        <a href="javascript:void(0)" onclick="viewCallsign('<?php echo htmlspecialchars(addslashes($p['callsign'])); ?>')" style="color: var(--accent-hover); text-decoration: none;">
-                                                                                            <?php echo htmlspecialchars($p['callsign']); ?>
-                                                                                        </a>
-                                                                                    </td>
-                                                                                    <td style="text-align: right;"><?php echo $p['total_qso']; ?></td>
-                                                                                    <td style="text-align: right; font-weight: bold;"><?php echo number_format($p['raw_score']); ?></td>
-                                                                                </tr>
-                                                                                <?php endforeach; ?>
-                                                                            </tbody>
-                                                                        </table>
-                                                                    </div>
-                                                                <?php endforeach; ?>
-                                                            </div>
-                                                        </details>
-                                                    <?php endforeach; ?>
-                                                </div>
-                                            </details>
+                    <h3 style="background: rgba(59, 130, 246, 0.3); padding: 0.5rem 1rem; border-radius: 8px; margin-top: 2rem; border-left: 5px solid var(--accent-color);">
+                        Operator: <?php echo htmlspecialchars($op); ?>
+                    </h3>
+                    
+                    <?php foreach($bands as $band => $powers): ?>
+                        <?php foreach($powers as $power => $conts): ?>
+                            <?php foreach($conts as $cont => $countries): ?>
+                                <?php
+                                $cont_names = [
+                                    'AS' => 'ASIA (AS)',
+                                    'EU' => 'EUROPE (EU)',
+                                    'NA' => 'NORTH AMERICA (NA)',
+                                    'SA' => 'SOUTH AMERICA (SA)',
+                                    'AF' => 'AFRICA (AF)',
+                                    'OC' => 'OCEANIA (OC)',
+                                    'AN' => 'ANTARCTICA (AN)'
+                                ];
+                                $cont_display = isset($cont_names[$cont]) ? $cont_names[$cont] : $cont;
+                                ?>
+                                <div style="margin-left: 1rem; margin-top: 1.5rem;">
+                                    <h4 style="color: var(--accent-hover); border-bottom: 1px solid var(--glass-border); padding-bottom: 0.5rem; display: flex; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                                        <span>Band: <?php echo htmlspecialchars($band); ?></span>
+                                        <span class="badge badge-warning" style="font-size: 0.85rem; padding: 0.2rem 0.5rem;">Power: <?php echo htmlspecialchars($power); ?></span>
+                                        <span class="badge" style="background: rgba(16, 185, 129, 0.2); color: var(--success); font-size: 0.85rem; padding: 0.2rem 0.5rem;">Continent: <?php echo htmlspecialchars($cont_display); ?></span>
+                                    </h4>
+                                    
+                                    <div style="margin-left: 1rem; margin-top: 1rem;">
+                                        <?php foreach($countries as $country => $participants): ?>
+                                            <h6 style="color: var(--text-secondary); margin-top: 1rem; margin-bottom: 0.5rem; font-size: 1.1rem; border-bottom: 1px dashed var(--glass-border); padding-bottom: 0.3rem;"><i class="fas fa-flag" style="margin-right: 0.5rem;"></i> <?php echo htmlspecialchars($country); ?></h6>
+                                            
+                                            <div class="table-responsive">
+                                                <table>
+                                                    <thead>
+                                                        <tr>
+                                                            <th style="width: 50px;">Rank</th>
+                                                            <th>Callsign</th>
+                                                            <th style="text-align: right;">QSO</th>
+                                                            <th style="text-align: right;">Poin</th>
+                                                            <th style="text-align: right;">Mult</th>
+                                                            <th style="text-align: right;">Raw Score</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <?php 
+                                                        $rank = 1;
+                                                        foreach($participants as $p): ?>
+                                                        <tr>
+                                                            <td><?php echo $rank++; ?></td>
+                                                            <td style="font-weight: 600;">
+                                                                <a href="javascript:void(0)" onclick="viewCallsign('<?php echo htmlspecialchars(addslashes($p['callsign'])); ?>')" style="color: var(--accent-hover); text-decoration: none;">
+                                                                    <?php echo htmlspecialchars($p['callsign']); ?>
+                                                                </a>
+                                                            </td>
+                                                            <td style="text-align: right;"><?php echo $p['total_qso']; ?></td>
+                                                            <td style="text-align: right;"><?php echo number_format($p['total_points']); ?></td>
+                                                            <td style="text-align: right;"><?php echo number_format($p['total_multiplier']); ?></td>
+                                                            <td style="text-align: right; font-weight: bold;"><?php echo number_format($p['raw_score']); ?></td>
+                                                        </tr>
+                                                        <?php endforeach; ?>
+                                                    </tbody>
+                                                </table>
+                                            </div>
                                         <?php endforeach; ?>
-                                    </div>
-                                </details>
+                                    </div> <!-- End inner div -->
+                                </div> <!-- End outer div -->
                             <?php endforeach; ?>
-                        </div>
-                    </details>
+                        <?php endforeach; ?>
+                    <?php endforeach; ?>
                 <?php endforeach; ?>
                 
             <?php endif; ?>

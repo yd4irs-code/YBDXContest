@@ -29,11 +29,14 @@ Aplikasi menyediakan formulir (*submission form*) interaktif pada *website* publ
 - **Validasi Teknis:** Robot akan memeriksa validitas teknis file Cabrillo yang diunggah (seperti tag `START-OF-LOG`, `END-OF-LOG`, kelengkapan *header`, dan format `QSO:`).
   - **Aturan Mode:** Kontes ini secara eksklusif menggunakan mode **SSB**. Oleh karena itu, tag kategori pada *header* (contoh `CATEGORY-MODE:`) diwajibkan bernilai `SSB`. Lebih lanjut, seluruh baris data kontak (`QSO:`) harus mencatatkan kolom mode secara spesifik sebagai `PH`. Jika ditemukan baris QSO yang modenya bukan `PH`, maka aplikasi akan otomatis menandainya sebagai `X-QSO:` (baris tersebut dianulir dari penjurian/tidak mendapat poin).
   - **Aturan Kategori Operator:** Jika peserta berada pada kelompok **SINGLE OP**, tag `OPERATORS:` pada *header* hanya boleh berisi maksimal 1 (satu) *callsign*. Jika peserta pada kelompok **MULTI OP**, maka tag `OPERATORS:` wajib memuat lebih dari satu *callsign* operator yang terlibat.
-- **Validasi Keamanan Data (Anti-Cheat):** *Callsign* peserta yang tercantum pada bagian *header* Cabrillo (`CALLSIGN:`) **wajib sama persis** dengan *callsign* pengirim (*sent call*) yang tercatat di dalam setiap baris data QSO. Jika ditemukan perbedaan, sistem menganggapnya sebagai indikasi manipulasi (potensi kecurangan) dan file otomatis ditolak.
+- **Validasi Keamanan Data (Anti-Cheat):** 
+  - *Callsign* peserta yang tercantum pada bagian *header* Cabrillo (`CALLSIGN:`) **wajib sama persis** dengan *callsign* pengirim (*sent call*) yang tercatat di dalam setiap baris data QSO.
+  - **Self-QSO Detection:** Peserta tidak diizinkan mencatatkan komunikasi (QSO) dengan dirinya sendiri. Jika *Received Call* sama dengan *Sent Call* atau *Header Callsign*, baris tersebut otomatis dicoret (X-QSO).
+  - Jika ditemukan pelanggaran fatal, file otomatis ditolak atau baris dibatalkan.
 - **Validasi Waktu QSO:** Robot akan memeriksa catatan waktu dari setiap QSO. QSO dianggap valid hanya jika terjadi selama rentang jadwal kontes berlangsung. Jika terdapat baris QSO dengan waktu di luar jadwal kontes, aplikasi otomatis menandainya sebagai `X-QSO:` sehingga tidak akan dihitung poinnya.
 - **Otomatisasi Konversi Cabrillo v2 ke v3:** Jika sistem mendeteksi peserta mengunggah file **Cabrillo versi 2 (v2)**, aplikasi akan mengonversinya secara otomatis ke format standar **Cabrillo versi 3 (v3)**. Apabila dalam proses konversi tersebut terdapat data *header* wajib v3 yang kurang (karena perbedaan versi), aplikasi akan berinteraksi langsung (meminta *input*) dari peserta di layar *web* saat itu juga. **Ketentuan Mutlak:** Konversi interaktif ini *hanya* berlaku untuk baris informasi *Header*. Baris data **QSO tidak boleh diubah** atau dimanipulasi sama sekali oleh sistem selama proses konversi.
 - **Penanganan Error Teknis & Perbaikan Real-Time:** Apabila ditemukan kesalahan saat proses validasi, aplikasi akan menampilkan rincian kesalahannya secara spesifik dan memfasilitasi perbaikan interaktif:
-  - **Kesalahan Header:** Jika *error* terdapat pada *Header* (contoh: kategori MULTI OP tapi kolom OPERATORS hanya diisi 1 callsign), aplikasi menyediakan *textbox* atau *dropdown* agar peserta dapat langsung mengoreksinya di halaman *web*. Berdasarkan *input* tersebut, aplikasi otomatis menyusun ulang (*re-generate*) file Cabrillo yang benar dan menyimpannya sebagai file valid.
+  - **Kesalahan & Abnormal Header:** Jika terdapat *header* yang kosong atau berisi nilai tidak standar (contoh: `CATEGORY-POWER: LOW-YD/YG`), sistem tidak akan membenahinya secara diam-diam (*no autofix*). Sebaliknya, sistem menandainya sebagai tidak valid dan memunculkan *form* perbaikan (*dropdown*) yang memaksa peserta memilih nilai standar yang sah (contoh: HIGH, LOW, QRP). Berdasarkan *input* tersebut, aplikasi otomatis menyusun ulang (*re-generate*) file Cabrillo yang benar.
   - **Kesalahan Data QSO:** Jika kesalahan terletak pada baris data QSO (seperti format salah atau *callsign* tidak cocok dengan header), perbaikan tidak dapat dilakukan secara *real-time*. Sistem hanya akan memberitahu rekapitulasi: berapa jumlah QSO yang Valid dan berapa yang *Error*.
   - **Force Submit (Abaikan Error QSO):** Jika peserta memilih untuk tetap mengirimkan (menyetujui) file tersebut meski masih ada baris QSO yang *error*, maka aplikasi akan secara otomatis mengubah tag pada baris yang bermasalah tersebut dari `QSO:` menjadi `X-QSO:`. Baris `X-QSO:` ini dipastikan tidak akan dihitung dalam proses ajudikasi selanjutnya.
   - **Pembatalan (Cancel):** Peserta memiliki opsi (tombol Batal) untuk membatalkan seluruh proses validasi jika merasa perlu memeriksa dan memperbaiki file Cabrillo secara manual secara *offline*.
@@ -53,6 +56,7 @@ Apabila file Cabrillo yang dikirim peserta dinyatakan **valid secara teknis**, m
    - Apabila sebuah QSO memecahkan rekor Prefix dan DXCC sekaligus pada *band* tersebut, maka QSO itu berhak mendapatkan **2 multiplier**.
    - (Peserta DX hanya mendapatkan multiplier dari Prefix dan DXCC khusus milik stasiun Indonesia).
    - **Stasiun Portable:** *Callsign* dengan *modifier* seperti `YB/JH1HUT` atau `JH1HUT/YB` akan dibaca sebagai Prefix `YB1` dan DXCC `INDONESIA`. `YB1AR/5` akan dibaca sebagai Prefix `YB5`. *Modifier* operasional seperti `/P`, `/M`, `/QRP` diabaikan dalam penentuan *prefix*.
+   - **Aturan Out-of-Band (Kategori Single Band):** Jika peserta memilih kategori band tunggal (misal `20M`), namun mencatatkan QSO di frekuensi lain (misal `40M`), QSO tersebut akan mendapat **0 Poin dan 0 Multiplier** bagi dirinya. Namun, QSO tersebut **tidak dicoret** (tidak di-X-QSO), sehingga stasiun lawan tetap berhak mendapatkan poin dan multiplier dari kontak tersebut saat ajudikasi silang.
 
    **Total Skor Sementara = Total Poin × Total Multiplier**.
 
@@ -87,13 +91,13 @@ Isi dari file UBN meliputi:
 - **Detail Analisis:** Informasi berapa jumlah QSO yang *Duplicate*, jumlah *Unique*, *Busted*, dan *Not In Log*, dilengkapi dengan lampiran **baris data QSO** spesifik yang termasuk ke dalam kategori-kategori tersebut agar peserta mengetahui letak kesalahannya.
 
 ### 2.6 Papan Peringkat (Leaderboard) Publik & Diskualifikasi
-Pengumuman Skor Akhir (begitu pula Skor Sementara / RAW Score) ditampilkan dalam bentuk tabel pada halaman *website* dengan struktur hierarki pengelompokan (*grouping*) yang ketat secara berurutan:
-1. Berdasarkan **Kategori Operator** (Single-Op, Multi-Op)
-2. Berdasarkan **Kategori Band** (All, 80M, 40M, 20M, 15M, 10M)
-3. Berdasarkan **Kategori Power** (High, Low, QRP)
-4. Berdasarkan **Benua (*Continent*)**
-5. Berdasarkan **Negara / DXCC**
-6. **Pengurutan (*Sorting*):** Di dalam kelompok terspesifik tersebut, peserta diurutkan secara menurun berdasarkan:
+Pengumuman Skor Akhir (begitu pula Skor Sementara / RAW Score) disajikan dalam wujud **Tabel Datar (*Flat Table*)** yang bersih, padat, dan seragam ala *Received Logs*. Atribut seperti Band, Power, dan Benua ditampilkan secara sejajar di bagian judul kelompok.
+
+Tabel Papan Peringkat disusun dengan prioritas pengurutan/pemisahan (meski visualnya datar) berdasarkan:
+1. Kategori Operator -> Band -> Power -> Benua -> Negara.
+2. Di dalam kelompok tersebut, tabel disajikan memanjang memuat kolom Rank, Callsign, QSO, Poin, Mult, dan Raw Score.
+
+3. **Pengurutan (*Sorting*):** Di dalam kelompok terspesifik tersebut, peserta diurutkan secara menurun berdasarkan:
    - *Total Skor* Tertinggi
    - *Jumlah Poin* Tertinggi (jika skor sama)
    - *Jumlah QSO* Tertinggi (jika poin sama)
@@ -135,8 +139,9 @@ Aplikasi menerapkan pembatasan hak akses untuk menjaga keamanan data:
 
 ### 2.9 Halaman "Received Logs" (Daftar Log Diterima)
 Aplikasi menyediakan laman publik **Received Logs** yang memuat daftar seluruh peserta yang telah berhasil mengirimkan file Cabrillo dan lolos validasi teknis.
-- Data disajikan dalam format tabel yang dikelompokkan secara hierarkis berdasarkan prioritas: **Kategori Operator -> Kategori Band -> Kategori Power -> Benua -> Negara**.
-- Detail informasi pada tabel meliputi: *Callsign* peserta, Nama Negara/DXCC, Jumlah QSO, Jumlah *Band* yang digunakan, serta Waktu (*timestamp*) penerimaan file Cabrillo terakhir.
+- **Fitur Pencarian:** Tersedia kotak penelusuran (pencarian) interaktif di bagian atas agar peserta dapat dengan cepat menemukan data *log* miliknya di tengah ribuan *log* lain berdasarkan *Callsign*.
+- Data disajikan dalam format tabel datar (*flat*) namun tetap dikelompokkan secara visual berdasarkan prioritas: **Kategori Operator -> Kategori Band -> Kategori Power -> Benua -> Negara**.
+- Detail informasi pada tabel meliputi: Rank, *Callsign* peserta, Nama Negara/DXCC, Jumlah QSO, Jumlah *Band* yang digunakan, serta Waktu (*timestamp*) penerimaan file Cabrillo terakhir.
 
 ### 2.10 Sertifikat Elektronik (e-Certificate) & Laman Unduhan
 Aplikasi menyediakan fasilitas piagam penghargaan yang di- *generate* dalam format **PDF** (menggunakan *library* **mPDF**) secara cuma-cuma (gratis) kepada peserta kontes.
@@ -165,3 +170,6 @@ Aplikasi menampilkan laman khusus **Pemenang Plakat** yang mempublikasikan dafta
   - **Pencegahan SQL Injection:** Seluruh interaksi aplikasi dengan *database* (seperti pengolahan pencarian *callsign*, validasi PIN, *login* Manajer/Admin, dan perekaman data QSO) diwajibkan menggunakan struktur **Prepared Statements** melalui PDO (PHP Data Objects). Dilarang keras menggunakan *raw query* yang rentan terhadap peretasan berbasis *SQL Injection*.
   - **Sanitasi Data & Proteksi XSS:** Setiap *input* teks yang diberikan pengguna wajib disanitasi secara ketat dan disandikan (*escape*) ketika dirender ke HTML (contoh: menggunakan `htmlspecialchars`) guna menutup celah *Cross-Site Scripting* (XSS).
   - **Keamanan *File Upload*:** Fitur unggah file Cabrillo akan memberlakukan proteksi ketat (membaca isi sebagai teks murni tanpa mengeksekusi berkasnya) untuk menggagalkan upaya *Remote Code Execution* (RCE) melalui file yang disamarkan.
+
+### 2.12 Manajemen Data & Perbaikan Database (Hotfix)
+- Aplikasi dilengkapi skrip perbaikan database (seperti `fix_9w.php` / `fix_db_dxcc.php`) yang memungkinkan penyisiran dan pemutakhiran ulang data benua (Continent) dan negara (DXCC) peserta secara masif jika terjadi koreksi aturan pada pangkalan data DXCC (`dxcc.json`).

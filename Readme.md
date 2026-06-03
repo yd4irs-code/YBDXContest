@@ -11,9 +11,10 @@ Aplikasi ini dibangun murni menggunakan **Vanilla PHP (PDO)**, **Vanilla CSS (Gl
 
 1. **Mesin Parser Cabrillo Super Pintar**
    - Mendukung berkas Cabrillo v2 dan v3.
-   - Pengecekan atribut *header* otomatis (mendeteksi apabila format `CATEGORY-OPERATOR` dan data *callsign* operator kurang lengkap).
+   - Pengecekan atribut *header* ketat. Nilai *header* yang kosong atau janggal (seperti `CATEGORY-POWER` yang tidak standar) akan dihadang, dan pengguna dipaksa memilih opsi baku melalui *dropdown* interaktif (No-Autofix).
    - Pengonversian V2 ke V3 secara *on-the-fly* menggunakan antarmuka koreksi interaktif di web.
-2. **Validasi Modus SSB & Rentang Waktu**
+2. **Validasi Anti-Cheat, SSB, & Rentang Waktu**
+   - **Anti-Cheat (Self-QSO):** Menghadang dan menolak tegas peserta yang terdeteksi mencatat komunikasi dengan dirinya sendiri (*Sent Call* sama dengan *Received Call* atau sama dengan *Callsign Header*).
    - Menghalau baris `QSO:` yang bukan merupakan mode *Single Side Band* (SSB / `PH`).
    - Penolakan baris QSO yang waktu kejadiannya meleset dari jadwal kontes (Setiap Sabtu Minggu Ke-2 Bulan Januari selama 24 jam penuh UTC).
    - Penandaan otomatis sebagai `X-QSO` bagi baris data yang melanggar aturan, tanpa merusak keseluruhan fail log peserta.
@@ -21,8 +22,9 @@ Aplikasi ini dibangun murni menggunakan **Vanilla PHP (PDO)**, **Vanilla CSS (Gl
    - Secara masif membaca ratusan ribu baris `QSO:` dari seluruh kontestan yang berpartisipasi dan menyilangkannya dengan batas deviasi waktu **30 menit**.
    - Mengelompokkan status silang (*cross-reference*) menjadi: `VALID` (Cocok), `BUSTED` (Data *exchange* keliru), `NIL` (Lawan tidak mencatat, atau beda *band/mode*, atau beda waktu > 30 menit), `DUPE` (Log ganda), dan `UNIQUE` (Stasiun lawan dicatat oleh kurang dari 3 partisipan). Hanya QSO **VALID** yang akan dihitung Poin dan Multiplier-nya.
    - Mengeluarkan dokumen teks murni berupa Laporan **UBN (Unique, Busted, NIL)** yang memuat status setiap baris QSO secara detail.
-4. **Papan Peringkat Berlapis Ketat (*Leaderboard*)**
-   - Klasemen hasil murni maupun hasil ajudikasi (*Final Score*) disajikan secara ketat dan berjenjang dari `Kategori Operator -> Band -> Power -> Benua -> Negara`.
+4. **Papan Peringkat Bersih & Elegan (*Leaderboard*)**
+   - Mengusung wujud antarmuka Tabel Datar (*Flat Table*) modern yang dilengkapi dengan fitur **Pencarian Live**.
+   - Klasemen hasil murni maupun hasil ajudikasi (*Final Score*) disusun rapi dari `Kategori Operator -> Band -> Power -> Benua -> Negara`.
    - Papan rekor sepanjang masa (All-Time High / ATH) merekam para jawara tak tertandingi di setiap kategori selama sejarah kontes.
 5. **Keamanan Ekstra (Sistem PIN)**
    - Penerbitan PIN 6-digit secara acak yang dikirimkan via SMTP untuk setiap peserta yang pertama kali mengunggah.
@@ -59,7 +61,7 @@ Sistem memiliki skrip DDL otomatis yang akan mengatur tabel untuk Anda:
    `cd c:\xampp\htdocs\YBDXContest`
 3. Jalankan skrip *setup* PHP bawaan (Pastikan layanan MySQL di XAMPP/Panel sedang berjalan):
    `php setup_database.php`
-4. Selamat! *Database* `ybdxcontest` berserta seluruh relasi tabel intinya (`participants`, `cabrillo_logs`, `qsos`, `users`, dll) telah terbentuk otomatis.
+4. Selamat! *Database* `c2contest` berserta seluruh relasi tabel intinya (`participants`, `cabrillo_logs`, `qsos`, `users`, dll) telah terbentuk otomatis.
 
 ### 3. Mengunduh Dependensi Eksternal (Composer)
 Buka terminal pada direktori akar aplikasi `YBDXContest`, lalu jalankan:
